@@ -125,9 +125,17 @@
     const showdownConverter = new showdown.Converter({
       tables: true,
       strikethrough: true,
-      tasklists: true
+      tasklists: true,
+      simpleLineBreaks: true,
+      parseImgDimensions: true,
+      literalMidWordUnderscores: true,
+      smartIndentationFix: true
     });
-    const turndownService = new TurndownService();
+    const turndownService = new TurndownService({
+      headingStyle: 'atx',
+      bulletListMarker: '*',
+      codeBlockStyle: 'fenced'
+    });
 
     // Two‑way sync guards
     let isUpdating = false;
@@ -253,13 +261,29 @@
         isUpdating = true;
         const markdownText = mdEditor.value;
         const html = showdownConverter.makeHtml(markdownText);
-        quill.root.innerHTML = html;
+        
+        // Store current focus
+        const hadFocus = document.activeElement === mdEditor;
+        
+        // Use Quill's clipboard handler to properly convert and insert the HTML
+        quill.setContents([]); // Clear previous content
+        quill.clipboard.dangerouslyPasteHTML(html); // Paste new HTML
+        
         // Save content to localStorage on change
         saveToStorage(markdownText);
         // Update clean button visibility
         updateCleanButtonVisibility(); 
+        
         setTimeout(() => {
           isUpdating = false;
+          // Restore focus if it was lost and markdown editor was the intended active element
+          if (hadFocus && document.activeElement !== mdEditor) {
+            // Check scroll position before focusing
+            const currentScrollTop = mdEditor.scrollTop;
+            mdEditor.focus();
+            // Restore scroll position after focusing
+            mdEditor.scrollTop = currentScrollTop;
+          }
         }, 10); // Small delay to ensure complete handling of the event
       }
     });
@@ -305,7 +329,9 @@
     // If there's saved content, initialize the editor with it
     if (savedData.markdown) {
       const html = showdownConverter.makeHtml(savedData.markdown);
-      quill.root.innerHTML = html;
+      // Use Quill's clipboard handler to properly convert and insert the HTML
+      quill.setContents([]);
+      quill.clipboard.dangerouslyPasteHTML(html, 'api');
     }
 
     // Rich‑Text → Markdown
