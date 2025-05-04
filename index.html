@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dual Markdown ↔ Rich‑Text Editor</title>
-  <link rel="icon" href="data:;base64,iVBORw0KGgo="> <!-- Add placeholder favicon -->
+  <link rel="icon" href="data:;base64,iVBORw0KGgo="> 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -16,7 +16,7 @@
     }
   </script>
   <!-- Quill CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" /> <!-- Updated Quill CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" /> 
   <style>
     /* Dark mode styles for editors */
     html.dark .ql-toolbar, 
@@ -98,8 +98,8 @@
     <!-- Markdown Pane -->
     <div class="flex flex-col w-1/2 h-full border-r border-gray-300 dark:border-gray-700">
       <div class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <button id="download-md" class="px-3 py-1 text-sm rounded bg-green-600 hover:bg-green-700 text-white">Download</button>
-        <button id="clean-chars-md" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Cleanup AI watermark</button>
+        <button id="download-md" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Download</button>
+        <button id="clean-chars-md" class="px-3 py-1 text-sm rounded bg-red-600 hover:bg-green-700 text-white">! Cleanup detected AI watermark !</button>
       </div>
       <textarea id="md-editor" class="flex-1 overflow-auto" spellcheck="false"></textarea>
     </div>
@@ -107,7 +107,7 @@
     <!-- Rich‑Text Pane -->
     <div class="flex flex-col w-1/2 h-full">
       <div class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <button id="download-html" class="px-3 py-1 text-sm rounded bg-green-600 hover:bg-green-700 text-white">Download</button>
+        <button id="download-html" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Download</button>
       </div>
       <div id="rt-editor" class="flex-1 overflow-auto"></div>
     </div>
@@ -136,7 +136,64 @@
     let activeEditor = 'markdown'; // Track which editor is currently active: 'markdown' or 'richtext'
     let lastEditTime = Date.now(); // Track when the last edit occurred
     const EDIT_TIMEOUT = 1000; // Increased from 500ms to 1000ms to provide more buffer time
-    
+
+    // ── Utility helpers (Moved earlier for initialization) ───────────────────
+    const SPECIAL_CHARS_REGEX = /[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g;
+
+    function containsSpecialCharacters(text) {
+      // Reset the regex state before testing
+      SPECIAL_CHARS_REGEX.lastIndex = 0; 
+      return SPECIAL_CHARS_REGEX.test(text);
+    }
+
+    function updateCleanButtonVisibility() {
+      // Ensure mdEditor exists before trying to access its value
+      const mdEditor = document.getElementById('md-editor');
+      if (!mdEditor) return; // Exit if editor not found yet
+
+      const mdText = mdEditor.value;
+      const cleanButton = document.getElementById('clean-chars-md');
+      if (containsSpecialCharacters(mdText)) {
+        cleanButton.style.display = 'inline-block';
+      } else {
+        cleanButton.style.display = 'none';
+      }
+    }
+
+    function sanitizeFilename(str) {
+      return (str || 'untitled').replace(/[^\w\d\s-]/g, '').trim().slice(0, 50) || 'untitled';
+    }
+
+    function showToast(message, duration = 2000) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
+    }
+
+    function download(text, filename) {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
+    }
+
+    function cleanSpecialCharacters(text) {
+      // Replace various problematic whitespace, zero-width, control, and formatting characters with a standard space
+      // Includes characters sometimes used for watermarking/fingerprinting
+      const cleanedText = text.replace(SPECIAL_CHARS_REGEX, ' '); // Use the constant regex
+      // Replace multiple spaces resulting from replacements with a single space
+      return cleanedText.replace(/ +/g, ' ');
+    }
+    // ── End Moved Utility helpers ───────────────────────────────────────────
+
     // Load saved data from localStorage
     function loadFromStorage() {
       try {
@@ -174,6 +231,8 @@
     // Initialize Markdown editor (textarea)
     const mdEditor = document.getElementById('md-editor');
     mdEditor.value = savedData.markdown || '';
+    // Initial check for clean button visibility (Now safe to call)
+    updateCleanButtonVisibility(); 
     
     // Track when the markdown editor is active
     mdEditor.addEventListener('focus', () => {
@@ -199,6 +258,8 @@
         quill.root.innerHTML = html;
         // Save content to localStorage on change
         saveToStorage(markdownText);
+        // Update clean button visibility
+        updateCleanButtonVisibility(); 
         setTimeout(() => {
           isUpdating = false;
         }, 10); // Small delay to ensure complete handling of the event
@@ -255,40 +316,6 @@
       }
     });
 
-    // ── Utility helpers ────────────────────────────────────────────────
-    function sanitizeFilename(str) {
-      return (str || 'untitled').replace(/[^\w\d\s-]/g, '').trim().slice(0, 50) || 'untitled';
-    }
-
-    function showToast(message, duration = 2000) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, duration);
-    }
-
-    function download(text, filename) {
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast(`Downloaded ${filename}`);
-    }
-
-    function cleanSpecialCharacters(text) {
-      // Replace various problematic whitespace, zero-width, control, and formatting characters with a standard space
-      // Includes characters sometimes used for watermarking/fingerprinting
-      const cleanedText = text.replace(/[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g, ' ');
-      // Replace multiple spaces resulting from replacements with a single space
-      return cleanedText.replace(/ +/g, ' ');
-    }
-
     // ── Button wiring ─────────────────────────────────────────────────
     document.getElementById('download-md').addEventListener('click', () => {
       const md = mdEditor.value;
@@ -303,12 +330,15 @@
       
       if (originalMd !== cleanedMd) {
         mdEditor.value = cleanedMd;
-        // Trigger input event to sync changes to the rich text editor and save
+        // Trigger input event to sync changes, save, and update button visibility
         mdEditor.dispatchEvent(new Event('input', { bubbles: true })); 
         showToast('Special characters cleaned');
       } else {
-        showToast('No special characters found to clean');
+        // This case should technically not happen if the button is only visible when needed
+        showToast('No special characters found to clean'); 
       }
+      // Hide button immediately after cleaning
+      document.getElementById('clean-chars-md').style.display = 'none'; 
     });
 
     document.getElementById('download-html').addEventListener('click', () => {
