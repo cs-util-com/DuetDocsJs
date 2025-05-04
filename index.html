@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,26 +7,91 @@
   <link rel="icon" href="data:;base64,iVBORw0KGgo="> <!-- Add placeholder favicon -->
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
+    }
+  </script>
   <!-- Quill CSS -->
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" /> <!-- Updated Quill CSS -->
+  <style>
+    /* Dark mode styles for editors */
+    html.dark .ql-toolbar, 
+    html.dark .ql-container,
+    html.dark .cm-editor {
+      background-color: #1e1e1e !important;
+      color: #e0e0e0 !important;
+      border-color: #4b5563 !important;
+    }
+    html.dark .ql-picker-label, 
+    html.dark .ql-picker-options {
+      color: #e0e0e0 !important;
+    }
+    html.dark .ql-stroke {
+      stroke: #e0e0e0 !important;
+    }
+    html.dark .ql-fill {
+      fill: #e0e0e0 !important;
+    }
+    /* Toast styles */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      background-color: #4338ca;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+    /* Responsive editor */
+    @media (max-width: 768px) {
+      #editor-wrapper {
+        flex-direction: column;
+      }
+      #editor-wrapper > div {
+        width: 100% !important;
+        height: 50% !important;
+      }
+    }
+  </style>
 </head>
-<body class="h-screen flex flex-col">
+<body class="h-screen flex flex-col dark:bg-gray-900 dark:text-gray-100">
+  <!-- Navbar -->
+  <nav class="bg-gray-100 dark:bg-gray-800 px-4 py-3 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+    <h1 class="text-lg font-semibold">Dual Markdown ↔ Rich‑Text Editor</h1>
+    <button id="theme-toggle" class="px-3 py-1 text-sm rounded bg-indigo-600 hover:bg-indigo-700 text-white">
+      <span>🌙</span> Theme
+    </button>
+  </nav>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast">Action completed!</div>
+
   <!-- Split Pane Wrapper -->
   <div id="editor-wrapper" class="flex flex-1 overflow-hidden">
     <!-- Markdown Pane -->
-    <div class="flex flex-col w-1/2 h-full border-r border-gray-300">
-      <div class="flex gap-2 p-2 border-b border-gray-300 bg-gray-50">
-        <button id="copy-md" class="px-3 py-1 text-sm rounded bg-blue-500 text-white">Copy</button>
-        <button id="download-md" class="px-3 py-1 text-sm rounded bg-green-600 text-white">Download</button>
+    <div class="flex flex-col w-1/2 h-full border-r border-gray-300 dark:border-gray-700">
+      <div class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <button id="download-md" class="px-3 py-1 text-sm rounded bg-green-600 hover:bg-green-700 text-white">Download</button>
       </div>
       <div id="md-editor" class="flex-1 overflow-auto"></div>
     </div>
 
     <!-- Rich‑Text Pane -->
     <div class="flex flex-col w-1/2 h-full">
-      <div class="flex gap-2 p-2 border-b border-gray-300 bg-gray-50">
-        <button id="copy-html" class="px-3 py-1 text-sm rounded bg-blue-500 text-white">Copy</button>
-        <button id="download-html" class="px-3 py-1 text-sm rounded bg-green-600 text-white">Download</button>
+      <div class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <button id="download-html" class="px-3 py-1 text-sm rounded bg-green-600 hover:bg-green-700 text-white">Download</button>
       </div>
       <div id="rt-editor" class="flex-1 overflow-auto"></div>
     </div>
@@ -45,12 +110,49 @@
     import { defaultKeymap } from "https://cdn.jsdelivr.net/npm/@codemirror/commands@6.5.0/+esm";
     // Removed markdown import which was causing deserialize issues
 
+    // ── Theme & Persistence ────────────────────────────────────────────────
+    const STORAGE_KEY = 'duetDocsData';
+    
+    // Load saved data from localStorage
+    function loadFromStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const data = JSON.parse(saved);
+          return data;
+        }
+      } catch (err) {
+        console.error('Error loading from storage:', err);
+      }
+      return { markdown: '', theme: 'light' };
+    }
+    
+    // Save data to localStorage
+    function saveToStorage(markdown) {
+      try {
+        const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ markdown, theme }));
+      } catch (err) {
+        console.error('Error saving to storage:', err);
+        showToast('Error saving your work');
+      }
+    }
+    
+    // Load saved data
+    const savedData = loadFromStorage();
+    
+    // Apply theme from storage
+    if (savedData.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.getElementById('theme-toggle').querySelector('span').textContent = '☀️';
+    }
+    
     // Initialize CodeMirror (Markdown side) with minimal configuration
     const mdParent = document.getElementById('md-editor');
 
     // Create the editor with minimal extensions to avoid conflicts
     const startState = EditorState.create({
-      doc: '',
+      doc: savedData.markdown || '',
       extensions: [
         keymap.of(defaultKeymap),
         EditorView.updateListener.of(update => {
@@ -59,6 +161,8 @@
             const markdownText = update.state.doc.toString();
             const html = showdownConverter.makeHtml(markdownText);
             quill.root.innerHTML = html;
+            // Save content to localStorage on change
+            saveToStorage(markdownText);
             isUpdating = false;
           }
         })
@@ -72,6 +176,12 @@
 
     // Initialize Quill (Rich‑Text side)
     const quill = new Quill('#rt-editor', { theme: 'snow' });
+    
+    // If there's saved content, initialize the editor with it
+    if (savedData.markdown) {
+      const html = showdownConverter.makeHtml(savedData.markdown);
+      quill.root.innerHTML = html;
+    }
 
     // Converters
     const showdownConverter = new showdown.Converter({
@@ -93,6 +203,7 @@
         mdView.dispatch({
           changes: { from: 0, to: mdView.state.doc.length, insert: markdown }
         });
+        // Content is saved via CodeMirror update listener
         isUpdating = false;
       }
     });
@@ -102,8 +213,14 @@
       return (str || 'untitled').replace(/[^\w\d\s-]/g, '').trim().slice(0, 50) || 'untitled';
     }
 
-    function copy(text) {
-      navigator.clipboard.writeText(text).catch(err => alert('Copy failed: ' + err));
+    function showToast(message, duration = 2000) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
     }
 
     function download(text, filename) {
@@ -114,17 +231,10 @@
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+      showToast(`Downloaded ${filename}`);
     }
 
     // ── Button wiring ─────────────────────────────────────────────────
-    document.getElementById('copy-md').addEventListener('click', () => {
-      copy(mdView.state.doc.toString());
-    });
-
-    document.getElementById('copy-html').addEventListener('click', () => {
-      copy(quill.root.innerHTML);
-    });
-
     document.getElementById('download-md').addEventListener('click', () => {
       const md = mdView.state.doc.toString();
       const first = md.split('\n').find(l => l.trim()) || 'untitled';
@@ -135,6 +245,25 @@
       const text = quill.getText();
       const first = text.split('\n').find(l => l.trim()) || 'untitled';
       download(quill.root.innerHTML, sanitizeFilename(first) + '.html');
+    });
+    
+    // Theme toggle functionality
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const html = document.documentElement;
+      const themeIcon = document.getElementById('theme-toggle').querySelector('span');
+      
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeIcon.textContent = '🌙';
+        showToast('Light mode activated');
+      } else {
+        html.classList.add('dark');
+        themeIcon.textContent = '☀️';
+        showToast('Dark mode activated');
+      }
+      
+      // Save theme preference
+      saveToStorage(mdView.state.doc.toString());
     });
   </script>
 </body>
