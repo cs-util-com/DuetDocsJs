@@ -99,6 +99,7 @@
     <div class="flex flex-col w-1/2 h-full border-r border-gray-300 dark:border-gray-700">
       <div class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <button id="download-md" class="px-3 py-1 text-sm rounded bg-green-600 hover:bg-green-700 text-white">Download</button>
+        <button id="clean-chars-md" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Cleanup AI watermark</button>
       </div>
       <textarea id="md-editor" class="flex-1 overflow-auto" spellcheck="false"></textarea>
     </div>
@@ -280,11 +281,34 @@
       showToast(`Downloaded ${filename}`);
     }
 
+    function cleanSpecialCharacters(text) {
+      // Replace various problematic whitespace characters (like NNBSP, ZWSP, NBSP, etc.) with a standard space
+      // Also removes other zero-width characters
+      const cleanedText = text.replace(/[\u202F\u200B\u2060\uFEFF\u00A0]/g, ' ');
+      // Optionally, replace multiple spaces resulting from replacements with a single space
+      return cleanedText.replace(/ +/g, ' ');
+    }
+
     // ── Button wiring ─────────────────────────────────────────────────
     document.getElementById('download-md').addEventListener('click', () => {
       const md = mdEditor.value;
       const first = md.split('\n').find(l => l.trim()) || 'untitled';
       download(md, sanitizeFilename(first) + '.md');
+    });
+
+    // Added: Event listener for the Clean Chars button
+    document.getElementById('clean-chars-md').addEventListener('click', () => {
+      const originalMd = mdEditor.value;
+      const cleanedMd = cleanSpecialCharacters(originalMd);
+      
+      if (originalMd !== cleanedMd) {
+        mdEditor.value = cleanedMd;
+        // Trigger input event to sync changes to the rich text editor and save
+        mdEditor.dispatchEvent(new Event('input', { bubbles: true })); 
+        showToast('Special characters cleaned');
+      } else {
+        showToast('No special characters found to clean');
+      }
     });
 
     document.getElementById('download-html').addEventListener('click', () => {
