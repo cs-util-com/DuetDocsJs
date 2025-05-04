@@ -1,147 +1,141 @@
-<!-- User Stories & Requirements for the code below:
-
-- This is a template for a single-page HTML web app.
-- A monospace font should be used.
-- No backend; all data is stored locally.
-
-Main user stories:
-- ...
-
-Keep this comment block in the code.
-Simplify the code if possible (without removing the functionality described above). 
-You MUST keep all comments in the code below, even if you think they are redundant.
-Always respond with the full new html file (including these comments here), 
-additional explanations what you change are nice to have but not necessary. 
--->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Decoupled Modules Example with Person Class</title>
-  <!-- Favicon: A white box --> <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23fff'/%3E%3C/svg%3E" type="image/svg+xml">
-  <!-- Added Tailwind CSS via CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dual Markdown ↔ Rich‑Text Editor</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo="> <!-- Add placeholder favicon -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @view-transition {
-      navigation: auto;
-    }
-    
-    nav a[aria-current="page"]:after {
-      border-color: white;
-      view-transition-name: posts-nav;
-    }
-    
-    /* Old stuff going out */
-    ::view-transition-old(posts-nav) {
-      animation: fade 0.2s linear forwards;
-      height: 100%;
-    }
-    
-    /* New stuff coming in */
-    ::view-transition-new(posts-nav) {
-      animation: fade 0.3s linear reverse;
-      height: 100%;
-    }
-    
-    @keyframes fade {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-  </style>
-  <script>
-    // Only use if browser supports View Transitions
-    if (document.startViewTransition) {
-      window.addEventListener('click', (e) => {
-        // Only handle internal links
-        if (e.target.tagName === 'A' && e.target.origin === window.location.origin) {
-          e.preventDefault();
-          document.startViewTransition(() => {
-            window.location.href = e.target.href;
-          });
-        }
-      });
-    }
-  </script>
+  <!-- Quill CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" /> <!-- Updated Quill CSS -->
 </head>
-<body class="font-mono p-8 bg-gray-50">
-  <div class="max-w-4xl mx-auto">
-    <header class="mb-8">
-      <h1 class="text-3xl font-bold text-blue-600 mb-4">Template Web App</h1>
-      <nav class="bg-blue-600 text-white p-4 rounded-lg mb-4">
-        <a href="index.html" class="mr-6 hover:underline font-bold relative" aria-current="page">
-          Home
-          <span class="absolute bottom-0 left-0 w-full h-0.5 bg-white"></span>
-        </a>
-        <a href="features.html" class="mr-6 hover:underline">Features</a>
-        <a href="about.html" class="hover:underline">About</a>
-      </nav>
-      <div class="bg-blue-100 border-l-4 border-blue-500 p-4 mb-6">
-        <p class="text-sm text-blue-700">This is a Tailwind CSS demonstration with modular JavaScript.</p>
+<body class="h-screen flex flex-col">
+  <!-- Split Pane Wrapper -->
+  <div id="editor-wrapper" class="flex flex-1 overflow-hidden">
+    <!-- Markdown Pane -->
+    <div class="flex flex-col w-1/2 h-full border-r border-gray-300">
+      <div class="flex gap-2 p-2 border-b border-gray-300 bg-gray-50">
+        <button id="copy-md" class="px-3 py-1 text-sm rounded bg-blue-500 text-white">Copy</button>
+        <button id="download-md" class="px-3 py-1 text-sm rounded bg-green-600 text-white">Download</button>
       </div>
-    </header>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <!-- Card 1 -->
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-bold mb-4 text-gray-800">Greeting Card</h2>
-        <p class="text-gray-600 mb-4">Click the button below to greet the person.</p>
-        <button id="greetBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300">
-          Greet
-        </button>
-      </div>
-      
-      <!-- Card 2 -->
-      <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-xl font-bold mb-4 text-gray-800">Tailwind Features</h2>
-        <ul class="list-disc pl-5 space-y-2 text-gray-600">
-          <li>Responsive design with <span class="font-bold text-blue-500">breakpoints</span></li>
-          <li>Utility-first CSS framework</li>
-          <li>Customizable with configuration</li>
-        </ul>
-        <div class="mt-4">
-          <div class="flex gap-2">
-            <span class="bg-red-200 text-red-800 text-xs p-1 rounded">Tag</span>
-            <span class="bg-green-200 text-green-800 text-xs p-1 rounded">Utility</span>
-            <span class="bg-yellow-200 text-yellow-800 text-xs p-1 rounded">Responsive</span>
-          </div>
-        </div>
-      </div>
+      <div id="md-editor" class="flex-1 overflow-auto"></div>
     </div>
-    
-    <div class="bg-white p-6 rounded-lg shadow">
-      <h2 class="text-xl font-bold mb-4 text-gray-800">Interactive Components</h2>
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="username">
-          Username
-        </label>
-        <input class="w-full p-2 border rounded text-gray-700 focus:outline-none focus:shadow-outline" id="username" type="text" placeholder="Username">
+
+    <!-- Rich‑Text Pane -->
+    <div class="flex flex-col w-1/2 h-full">
+      <div class="flex gap-2 p-2 border-b border-gray-300 bg-gray-50">
+        <button id="copy-html" class="px-3 py-1 text-sm rounded bg-blue-500 text-white">Copy</button>
+        <button id="download-html" class="px-3 py-1 text-sm rounded bg-green-600 text-white">Download</button>
       </div>
-      <div class="flex justify-between">
-        <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none transition">
-          Save
-        </button>
-        <button class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none transition">
-          Cancel
-        </button>
-      </div>
+      <div id="rt-editor" class="flex-1 overflow-auto"></div>
     </div>
   </div>
-  
-  <!-- Load the main module -->
+
+  <!-- Helper Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script> <!-- Updated Quill JS -->
+
+  <!-- CodeMirror & App Logic -->
   <script type="module">
+    // Import only the essential CodeMirror packages to minimize version conflicts
+    import { EditorState } from "https://cdn.jsdelivr.net/npm/@codemirror/state@6.4.1/+esm";
+    import { EditorView, keymap } from "https://cdn.jsdelivr.net/npm/@codemirror/view@6.26.3/+esm";
+    import { defaultKeymap } from "https://cdn.jsdelivr.net/npm/@codemirror/commands@6.5.0/+esm";
+    // Removed markdown import which was causing deserialize issues
 
-    import { tellBirthday } from './utils.js';
-    import { Person } from './person.js';
+    // Initialize CodeMirror (Markdown side) with minimal configuration
+    const mdParent = document.getElementById('md-editor');
 
-    // Create a new Person instance with values defined in the HTML.
-    const person = new Person('Alice', 40);
-    document.getElementById('greetBtn').addEventListener('click', () => {
-      alert(tellBirthday(person));
+    // Create the editor with minimal extensions to avoid conflicts
+    const startState = EditorState.create({
+      doc: '',
+      extensions: [
+        keymap.of(defaultKeymap),
+        EditorView.updateListener.of(update => {
+          if (update.docChanged && !isUpdating) {
+            isUpdating = true;
+            const markdownText = update.state.doc.toString();
+            const html = showdownConverter.makeHtml(markdownText);
+            quill.root.innerHTML = html;
+            isUpdating = false;
+          }
+        })
+      ]
     });
 
-  </script>
+    const mdView = new EditorView({
+      state: startState,
+      parent: mdParent
+    });
 
+    // Initialize Quill (Rich‑Text side)
+    const quill = new Quill('#rt-editor', { theme: 'snow' });
+
+    // Converters
+    const showdownConverter = new showdown.Converter({
+      tables: true,
+      strikethrough: true,
+      tasklists: true
+    });
+    const turndownService = new TurndownService();
+
+    // Two‑way sync guards
+    let isUpdating = false;
+
+    // Rich‑Text → Markdown
+    quill.on('text-change', (delta, oldDelta, source) => {
+      if (source === 'user' && !isUpdating) {
+        isUpdating = true;
+        const html = quill.root.innerHTML;
+        const markdown = turndownService.turndown(html);
+        mdView.dispatch({
+          changes: { from: 0, to: mdView.state.doc.length, insert: markdown }
+        });
+        isUpdating = false;
+      }
+    });
+
+    // ── Utility helpers ────────────────────────────────────────────────
+    function sanitizeFilename(str) {
+      return (str || 'untitled').replace(/[^\w\d\s-]/g, '').trim().slice(0, 50) || 'untitled';
+    }
+
+    function copy(text) {
+      navigator.clipboard.writeText(text).catch(err => alert('Copy failed: ' + err));
+    }
+
+    function download(text, filename) {
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ── Button wiring ─────────────────────────────────────────────────
+    document.getElementById('copy-md').addEventListener('click', () => {
+      copy(mdView.state.doc.toString());
+    });
+
+    document.getElementById('copy-html').addEventListener('click', () => {
+      copy(quill.root.innerHTML);
+    });
+
+    document.getElementById('download-md').addEventListener('click', () => {
+      const md = mdView.state.doc.toString();
+      const first = md.split('\n').find(l => l.trim()) || 'untitled';
+      download(md, sanitizeFilename(first) + '.md');
+    });
+
+    document.getElementById('download-html').addEventListener('click', () => {
+      const text = quill.getText();
+      const first = text.split('\n').find(l => l.trim()) || 'untitled';
+      download(quill.root.innerHTML, sanitizeFilename(first) + '.html');
+    });
+  </script>
 </body>
 </html>
