@@ -265,7 +265,32 @@
     });
 
     // Initialize Quill (Rich‑Text side)
-    const quill = new Quill('#rt-editor', { theme: 'snow' });
+    const toolbarOptions = [
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'font': [] }],
+      ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+      ['blockquote', 'code-block'],
+
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+      [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+      [{ 'direction': 'rtl' }],                         // text direction
+
+      [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+      
+      [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+      [{ 'align': [] }],
+
+      ['link', 'image', 'video'], // Add image and video options
+
+      ['clean']                                         // remove formatting button
+    ];
+    const quill = new Quill('#rt-editor', { 
+      modules: { 
+        toolbar: toolbarOptions 
+      },
+      theme: 'snow' 
+    });
     
     // Track when the rich text editor is active
     document.querySelector('#rt-editor .ql-editor').addEventListener('focus', () => {
