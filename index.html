@@ -1,419 +1,430 @@
 <!DOCTYPE html>
 <html lang="en" class="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dual Markdown ↔ Rich‑Text Editor</title>
-  <!-- Favicon: Two panes -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='35' height='80' fill='%23ccc'/%3E%3Crect x='55' y='10' width='35' height='80' fill='%23eee'/%3E%3C/svg%3E" type="image/svg+xml">
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dual Markdown ↔ Rich‑Text Editor (bug‑fixed)</title>
+    <!-- Favicon: Two panes -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='35' height='80' fill='%23ccc'/%3E%3Crect x='55' y='10' width='35' height='80' fill='%23eee'/%3E%3C/svg%3E"
+      type="image/svg+xml"
+    />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {},
+        },
+      };
+    </script>
+    <!-- Quill CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Dark mode styles for editors */
+      html.dark .ql-toolbar,
+      html.dark .ql-container {
+        background-color: #1e1e1e !important;
+        color: #e0e0e0 !important;
+        border-color: #4b5563 !important;
       }
-    }
-  </script>
-  <!-- Quill CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" /> 
-  <style>
-    /* Dark mode styles for editors */
-    html.dark .ql-toolbar, 
-    html.dark .ql-container {
-      background-color: #1e1e1e !important;
-      color: #e0e0e0 !important;
-      border-color: #4b5563 !important;
-    }
-    html.dark .ql-picker-label, 
-    html.dark .ql-picker-options {
-      color: #e0e0e0 !important;
-    }
-    html.dark .ql-stroke {
-      stroke: #e0e0e0 !important;
-    }
-    html.dark .ql-fill {
-      fill: #e0e0e0 !important;
-    }
-    /* Markdown textarea styling */
-    #md-editor {
-      width: 100%;
-      height: 100%;
-      padding: 1rem;
-      border: none;
-      outline: none;
-      resize: none;
-      font-family: monospace;
-      background-color: #ffffff;
-      color: #333333;
-    }
-    html.dark #md-editor {
-      background-color: #1e1e1e;
-      color: #e0e0e0;
-    }
-    /* Toast styles */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 12px 24px;
-      border-radius: 8px;
-      background-color: #4338ca;
-      color: white;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    .toast.show {
-      opacity: 1;
-    }
-    /* Responsive editor */
-    @media (max-width: 768px) {
-      #editor-wrapper {
-        flex-direction: column;
+
+      html.dark .ql-picker-label,
+      html.dark .ql-picker-options {
+        color: #e0e0e0 !important;
       }
-      #editor-wrapper > div {
-        width: 100% !important;
-        height: 50% !important;
+
+      html.dark .ql-stroke {
+        stroke: #e0e0e0 !important;
       }
-    }
-  </style>
-</head>
-<body class="h-screen flex flex-col dark:bg-gray-900 dark:text-gray-100">
-  <!-- Toast notification -->
-  <div id="toast" class="toast">Action completed!</div>
 
-  <!-- Split Pane Wrapper -->
-  <div id="editor-wrapper" class="flex flex-1 overflow-hidden">
-    <!-- Markdown Pane -->
-    <div class="flex flex-col w-1/2 h-full border-r border-gray-300 dark:border-gray-700">
-      <div class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <button id="download-md" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Download</button>
-        <button id="clean-chars-md" class="px-3 py-1 text-sm rounded bg-red-600 hover:bg-green-700 text-white">! Cleanup detected AI watermark !</button>
-      </div>
-      <textarea id="md-editor" class="flex-1 overflow-auto" spellcheck="false"></textarea>
-    </div>
-
-    <!-- Rich‑Text Pane -->
-    <div class="flex flex-col w-1/2 h-full">
-      <!-- Header for Rich-Text Pane -->
-      <div class="flex justify-between items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-        <button id="download-html" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Download</button>
-        <!-- Theme Toggle Button -->
-        <button id="theme-toggle" class="px-3 py-1 text-sm rounded bg-black dark:bg-white text-white dark:text-black hover:bg-gray-700 dark:hover:bg-gray-200 border border-gray-700 dark:border-gray-300">
-          <span>🌙</span> Theme
-        </button>
-      </div>
-      <div id="rt-editor" class="flex-1 overflow-auto"></div>
-    </div>
-  </div>
-
-  <!-- Helper Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-
-  <!-- App Logic -->
-  <script>
-    // ── Theme & Persistence ────────────────────────────────────────────────
-    const STORAGE_KEY = 'duetDocsData';
-    
-    // Converters - Initialize before using them
-    const showdownConverter = new showdown.Converter({
-      tables: true,
-      strikethrough: true,
-      tasklists: true,
-      simpleLineBreaks: true,
-      parseImgDimensions: true,
-      literalMidWordUnderscores: true,
-      smartIndentationFix: true
-    });
-    const turndownService = new TurndownService({
-      headingStyle: 'atx',
-      bulletListMarker: '*',
-      codeBlockStyle: 'fenced'
-    });
-
-    // Two‑way sync guards
-    let isUpdating = false;
-    let activeEditor = 'markdown'; // Track which editor is currently active: 'markdown' or 'richtext'
-    let lastEditTime = Date.now(); // Track when the last edit occurred
-    const EDIT_TIMEOUT = 1000; // Increased from 500ms to 1000ms to provide more buffer time
-
-    // ── Utility helpers ──────────────────────────────────────────────────────
-    const SPECIAL_CHARS_REGEX = /[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g;
-
-    function containsSpecialCharacters(text) {
-      // Reset the regex state before testing
-      SPECIAL_CHARS_REGEX.lastIndex = 0; 
-      return SPECIAL_CHARS_REGEX.test(text);
-    }
-
-    function updateCleanButtonVisibility() {
-      // Ensure mdEditor exists before trying to access its value
-      const mdEditor = document.getElementById('md-editor');
-      if (!mdEditor) return; // Exit if editor not found yet
-
-      const mdText = mdEditor.value;
-      const cleanButton = document.getElementById('clean-chars-md');
-      if (containsSpecialCharacters(mdText)) {
-        cleanButton.style.display = 'inline-block';
-      } else {
-        cleanButton.style.display = 'none';
+      html.dark .ql-fill {
+        fill: #e0e0e0 !important;
       }
-    }
 
-    function sanitizeFilename(str) {
-      return (str || 'untitled').replace(/[^\w\d\s-]/g, '').trim().slice(0, 50) || 'untitled';
-    }
+      /* Markdown textarea styling */
+      #md-editor {
+        width: 100%;
+        height: 100%;
+        padding: 1rem;
+        border: none;
+        outline: none;
+        resize: none;
+        font-family: monospace;
+        background-color: #ffffff;
+        color: #333333;
+      }
 
-    function showToast(message, duration = 2000) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, duration);
-    }
+      html.dark #md-editor {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+      }
 
-    function download(text, filename) {
-      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast(`Downloaded ${filename}`);
-    }
+      /* Toast styles */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 8px;
+        background-color: #4338ca;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 9999;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
 
-    function cleanSpecialCharacters(text) {
-      // Replace various problematic whitespace, zero-width, control, and formatting characters with a standard space
-      // Includes characters sometimes used for watermarking/fingerprinting
-      const cleanedText = text.replace(SPECIAL_CHARS_REGEX, ' '); // Use the constant regex
-      // Replace multiple spaces resulting from replacements with a single space
-      return cleanedText.replace(/ +/g, ' ');
-    }
-    // ── End Utility helpers ───────────────────────────────────────────────────
+      .toast.show {
+        opacity: 1;
+      }
 
-    // Load saved data from localStorage
-    function loadFromStorage() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const data = JSON.parse(saved);
-          return data;
+      /* Responsive editor */
+      @media (max-width: 768px) {
+        #editor-wrapper {
+          flex-direction: column;
         }
-      } catch (err) {
-        console.error('Error loading from storage:', err);
-      }
-      return { markdown: '', theme: 'light' };
-    }
-    
-    // Save data to localStorage
-    function saveToStorage(markdown) {
-      try {
-        const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ markdown, theme }));
-      } catch (err) {
-        console.error('Error saving to storage:', err);
-        showToast('Error saving your work');
-      }
-    }
-    
-    // Load saved data
-    const savedData = loadFromStorage();
-    
-    // Apply theme from storage
-    if (savedData.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.getElementById('theme-toggle').querySelector('span').textContent = '☀️';
-    }
-    
-    // Initialize Markdown editor (textarea)
-    const mdEditor = document.getElementById('md-editor');
-    mdEditor.value = savedData.markdown || '';
-    // Initial check for clean button visibility (Now safe to call)
-    updateCleanButtonVisibility(); 
-    
-    // Track when the markdown editor is active
-    mdEditor.addEventListener('focus', () => {
-      activeEditor = 'markdown';
-      lastEditTime = Date.now();
-    });
-    
-    mdEditor.addEventListener('click', () => {
-      activeEditor = 'markdown';
-      lastEditTime = Date.now();
-    });
-    
-    // Handle markdown input changes
-    mdEditor.addEventListener('input', () => {
-      if (!isUpdating) {
-        // Mark markdown editor as active
-        activeEditor = 'markdown';
-        lastEditTime = Date.now();
 
+        #editor-wrapper > div {
+          width: 100% !important;
+          height: 50% !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="h-screen flex flex-col dark:bg-gray-900 dark:text-gray-100">
+    <!-- Toast notification -->
+    <div id="toast" class="toast">Action completed!</div>
+
+    <!-- Split Pane Wrapper -->
+    <div id="editor-wrapper" class="flex flex-1 overflow-hidden">
+      <!-- Markdown Pane -->
+      <div
+        class="flex flex-col w-1/2 h-full border-r border-gray-300 dark:border-gray-700"
+      >
+        <div
+          class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+        >
+          <button
+            id="download-md"
+            class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Download
+          </button>
+          <button
+            id="clean-chars-md"
+            class="px-3 py-1 text-sm rounded bg-red-600 hover:bg-green-700 text-white"
+          >
+            ! Cleanup detected AI watermark !
+          </button>
+        </div>
+        <textarea
+          id="md-editor"
+          class="flex-1 overflow-auto"
+          spellcheck="false"
+        ></textarea>
+      </div>
+
+      <!-- Rich‑Text Pane -->
+      <div class="flex flex-col w-1/2 h-full">
+        <!-- Header for Rich-Text Pane -->
+        <div
+          class="flex justify-between items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+        >
+          <button
+            id="download-html"
+            class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            Download
+          </button>
+          <!-- Theme Toggle Button -->
+          <button
+            id="theme-toggle"
+            class="px-3 py-1 text-sm rounded bg-black dark:bg-white text-white dark:text-black hover:bg-gray-700 dark:hover:bg-gray-200 border border-gray-700 dark:border-gray-300"
+          >
+            <span>🌙</span> Theme
+          </button>
+        </div>
+        <div id="rt-editor" class="flex-1 overflow-auto"></div>
+      </div>
+    </div>
+
+    <!-- Helper Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
+    <!-- App Logic -->
+    <script>
+      // ── Theme & Persistence ────────────────────────────────────────────────
+      const STORAGE_KEY = "duetDocsData";
+
+      // Converters - Initialize before using them
+      const showdownConverter = new showdown.Converter({
+        tables: true,
+        strikethrough: true,
+        tasklists: true,
+        simpleLineBreaks: true,
+        parseImgDimensions: true,
+        literalMidWordUnderscores: true,
+        smartIndentationFix: true,
+      });
+      const turndownService = new TurndownService({
+        headingStyle: "atx",
+        bulletListMarker: "*",
+        codeBlockStyle: "fenced",
+      });
+
+      // ── NEW: Normalise Quill list markup so Turndown keeps bullets ────────
+      function normalizeQuillLists(html) {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = html;
+        wrapper.querySelectorAll("ol").forEach((ol) => {
+          const lis = [...ol.children].filter((c) => c.tagName === "LI");
+          if (
+            lis.length &&
+            lis.every((li) => li.getAttribute("data-list") === "bullet")
+          ) {
+            const ul = document.createElement("ul");
+            lis.forEach((li) => li.removeAttribute("data-list"));
+            ul.innerHTML = ol.innerHTML;
+            ol.replaceWith(ul);
+          }
+        });
+        return wrapper.innerHTML;
+      }
+      // ── End list normaliser ────────────────────────────────────────────────
+
+      // Two‑way sync guards
+      let isUpdating = false;
+      let activeEditor = "markdown";
+      let lastEditTime = Date.now();
+      const EDIT_TIMEOUT = 1000;
+
+      // ── Utility helpers ──────────────────────────────────────────────────────
+      const SPECIAL_CHARS_REGEX =
+        /[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g;
+
+      function containsSpecialCharacters(text) {
+        SPECIAL_CHARS_REGEX.lastIndex = 0;
+        return SPECIAL_CHARS_REGEX.test(text);
+      }
+      function sanitizeFilename(str) {
+        return (
+          (str || "untitled")
+            .replace(/[^\w\d\s-]/g, "")
+            .trim()
+            .slice(0, 50) || "untitled"
+        );
+      }
+      function showToast(message, duration = 2000) {
+        const t = document.getElementById("toast");
+        t.textContent = message;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), duration);
+      }
+      function download(text, filename) {
+        const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast(`Downloaded ${filename}`);
+      }
+      function cleanSpecialCharacters(text) {
+        const cleaned = text
+          .replace(SPECIAL_CHARS_REGEX, " ")
+          .replace(/ +/g, " ");
+        return cleaned;
+      }
+
+      // Load / save helpers
+      function loadFromStorage() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          return saved ? JSON.parse(saved) : { markdown: "", theme: "light" };
+        } catch (e) {
+          return { markdown: "", theme: "light" };
+        }
+      }
+      function saveToStorage(markdown) {
+        try {
+          const theme = document.documentElement.classList.contains("dark")
+            ? "dark"
+            : "light";
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ markdown, theme })
+          );
+        } catch (e) {
+          console.error("localStorage error", e);
+        }
+      }
+
+      // ── Initialise state ────────────────────────────────────────────────────
+      const savedData = loadFromStorage();
+      if (savedData.theme === "dark") {
+        document.documentElement.classList.add("dark");
+        document
+          .getElementById("theme-toggle")
+          .querySelector("span").textContent = "☀️";
+      }
+
+      const mdEditor = document.getElementById("md-editor");
+      mdEditor.value = savedData.markdown || "";
+
+      const updateCleanBtn = () => {
+        const btn = document.getElementById("clean-chars-md");
+        btn.style.display = containsSpecialCharacters(mdEditor.value)
+          ? "inline-block"
+          : "none";
+      };
+      updateCleanBtn();
+
+      // Track focus for sync logic
+      mdEditor.addEventListener("focus", () => {
+        activeEditor = "markdown";
+        lastEditTime = Date.now();
+      });
+      mdEditor.addEventListener("click", () => {
+        activeEditor = "markdown";
+        lastEditTime = Date.now();
+      });
+
+      // Markdown → Rich‑text
+      mdEditor.addEventListener("input", () => {
+        if (isUpdating) return;
+        activeEditor = "markdown";
+        lastEditTime = Date.now();
         isUpdating = true;
-        const markdownText = mdEditor.value;
-        const html = showdownConverter.makeHtml(markdownText);
-        
-        // Store current focus
+        const html = showdownConverter.makeHtml(mdEditor.value);
         const hadFocus = document.activeElement === mdEditor;
-        
-        // Use Quill's clipboard handler to properly convert and insert the HTML
-        quill.setContents([]); // Clear previous content
-        quill.clipboard.dangerouslyPasteHTML(html); // Paste new HTML
-        
-        // Save content to localStorage on change
-        saveToStorage(markdownText);
-        // Update clean button visibility
-        updateCleanButtonVisibility(); 
-        
+        quill.setContents([]);
+        quill.clipboard.dangerouslyPasteHTML(html);
+        saveToStorage(mdEditor.value);
+        updateCleanBtn();
         setTimeout(() => {
           isUpdating = false;
-          // Restore focus if it was lost and markdown editor was the intended active element
           if (hadFocus && document.activeElement !== mdEditor) {
-            // Check scroll position before focusing
-            const currentScrollTop = mdEditor.scrollTop;
+            const pos = mdEditor.scrollTop;
             mdEditor.focus();
-            // Restore scroll position after focusing
-            mdEditor.scrollTop = currentScrollTop;
+            mdEditor.scrollTop = pos;
           }
-        }, 10); // Small delay to ensure complete handling of the event
+        }, 10);
+      });
+
+      // Initialise Quill
+      const toolbarOptions = [
+        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+        [{ font: [] }],
+        ["bold", "italic", "underline", "strike"],
+        ["blockquote", "code-block"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        [{ script: "sub" }, { script: "super" }],
+        [{ indent: "-1" }, { indent: "+1" }],
+        [{ direction: "rtl" }],
+        [{ size: ["small", false, "large", "huge"] }],
+        [{ color: [] }, { background: [] }],
+        [{ align: [] }],
+        ["link", "image", "video"],
+        ["clean"],
+      ];
+      const quill = new Quill("#rt-editor", {
+        modules: { toolbar: toolbarOptions },
+        theme: "snow",
+      });
+
+      document
+        .querySelector("#rt-editor .ql-editor")
+        .addEventListener("focus", () => {
+          activeEditor = "richtext";
+          lastEditTime = Date.now();
+        });
+      document
+        .querySelector("#rt-editor .ql-editor")
+        .addEventListener("mousedown", () => {
+          activeEditor = "richtext";
+          lastEditTime = Date.now();
+        });
+
+      // Populate Quill if saved markdown exists
+      if (savedData.markdown) {
+        quill.setContents([]);
+        quill.clipboard.dangerouslyPasteHTML(
+          showdownConverter.makeHtml(savedData.markdown),
+          "api"
+        );
       }
-    });
 
-    // Initialize Quill (Rich‑Text side)
-    const toolbarOptions = [
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'font': [] }],
-      ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
-      ['blockquote', 'code-block'],
-
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
-      [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
-      [{ 'direction': 'rtl' }],                         // text direction
-
-      [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
-      
-      [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-      [{ 'align': [] }],
-
-      ['link', 'image', 'video'], // Add image and video options
-
-      ['clean']                                         // remove formatting button
-    ];
-    const quill = new Quill('#rt-editor', { 
-      modules: { 
-        toolbar: toolbarOptions 
-      },
-      theme: 'snow' 
-    });
-    
-    // Track when the rich text editor is active
-    document.querySelector('#rt-editor .ql-editor').addEventListener('focus', () => {
-      activeEditor = 'richtext';
-      lastEditTime = Date.now();
-    });
-    document.querySelector('#rt-editor .ql-editor').addEventListener('mousedown', () => {
-      activeEditor = 'richtext';
-      lastEditTime = Date.now();
-    });
-    
-    // If there's saved content, initialize the editor with it
-    if (savedData.markdown) {
-      const html = showdownConverter.makeHtml(savedData.markdown);
-      // Use Quill's clipboard handler to properly convert and insert the HTML
-      quill.setContents([]);
-      quill.clipboard.dangerouslyPasteHTML(html, 'api');
-    }
-
-    // Rich‑Text → Markdown
-    quill.on('text-change', (delta, oldDelta, source) => {
-      if (source === 'user' && !isUpdating) {
-        // Mark rich text editor as active
-        activeEditor = 'richtext';
+      // Rich‑text → Markdown (with bullet fix)
+      quill.on("text-change", (_, __, source) => {
+        if (source !== "user" || isUpdating) return;
+        activeEditor = "richtext";
         lastEditTime = Date.now();
-        
-        // IMPROVED: More strict check to prevent markdown updates while actively typing
-        const isUserActiveInMarkdown = activeEditor === 'markdown' && 
-                                     (Date.now() - lastEditTime < EDIT_TIMEOUT);
-        
-        if (isUserActiveInMarkdown) {
-          return; // Skip updating markdown if user is actively typing there
-        }
-
+        const isEditingMarkdown =
+          activeEditor === "markdown" &&
+          Date.now() - lastEditTime < EDIT_TIMEOUT;
+        if (isEditingMarkdown) return;
         isUpdating = true;
         const html = quill.root.innerHTML;
-        const markdown = turndownService.turndown(html);
-        
-        // Update the markdown textarea
-        mdEditor.value = markdown;
-        
-        // Save content to localStorage
-        saveToStorage(markdown);
-        
-        setTimeout(() => {
-          isUpdating = false;
-        }, 10); // Small delay to ensure complete handling of the event
-      }
-    });
+        const fixedHtml = normalizeQuillLists(html); // <── IMPORTANT FIX
+        const md = turndownService.turndown(fixedHtml);
+        mdEditor.value = md;
+        saveToStorage(md);
+        setTimeout(() => (isUpdating = false), 10);
+      });
 
-    // ── Button wiring ─────────────────────────────────────────────────
-    document.getElementById('download-md').addEventListener('click', () => {
-      const md = mdEditor.value;
-      const first = md.split('\n').find(l => l.trim()) || 'untitled';
-      download(md, sanitizeFilename(first) + '.md');
-    });
+      // ── Buttons ────────────────────────────────────────────────────────────
+      document.getElementById("download-md").addEventListener("click", () => {
+        const first =
+          mdEditor.value.split("\n").find((l) => l.trim()) || "untitled";
+        download(mdEditor.value, sanitizeFilename(first) + ".md");
+      });
 
-    // Event listener for the Clean Chars button
-    document.getElementById('clean-chars-md').addEventListener('click', () => {
-      const originalMd = mdEditor.value;
-      const cleanedMd = cleanSpecialCharacters(originalMd);
-      
-      if (originalMd !== cleanedMd) {
-        mdEditor.value = cleanedMd;
-        // Trigger input event to sync changes, save, and update button visibility
-        mdEditor.dispatchEvent(new Event('input', { bubbles: true })); 
-        showToast('Special characters cleaned');
-      } else {
-        // This case should technically not happen if the button is only visible when needed
-        showToast('No special characters found to clean'); 
-      }
-      // Hide button immediately after cleaning
-      document.getElementById('clean-chars-md').style.display = 'none'; 
-    });
+      document
+        .getElementById("clean-chars-md")
+        .addEventListener("click", () => {
+          const cleaned = cleanSpecialCharacters(mdEditor.value);
+          if (cleaned !== mdEditor.value) {
+            mdEditor.value = cleaned;
+            mdEditor.dispatchEvent(new Event("input", { bubbles: true }));
+            showToast("Special characters cleaned");
+          } else {
+            showToast("No special characters found");
+          }
+          updateCleanBtn();
+        });
 
-    document.getElementById('download-html').addEventListener('click', () => {
-      const text = quill.getText();
-      const first = text.split('\n').find(l => l.trim()) || 'untitled';
-      download(quill.root.innerHTML, sanitizeFilename(first) + '.html');
-    });
-    
-    // Theme toggle functionality
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-      const html = document.documentElement;
-      const themeIcon = document.getElementById('theme-toggle').querySelector('span');
-      
-      if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        themeIcon.textContent = '🌙';
-        showToast('Light mode activated');
-      } else {
-        html.classList.add('dark');
-        themeIcon.textContent = '☀️';
-        showToast('Dark mode activated');
-      }
-      
-      // Save theme preference
-      saveToStorage(mdEditor.value);
-    });
-  </script>
-</body>
+      document.getElementById("download-html").addEventListener("click", () => {
+        const text = quill.getText();
+        const first = text.split("\n").find((l) => l.trim()) || "untitled";
+        download(quill.root.innerHTML, sanitizeFilename(first) + ".html");
+      });
+
+      document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.documentElement;
+        const icon = document
+          .getElementById("theme-toggle")
+          .querySelector("span");
+        if (html.classList.contains("dark")) {
+          html.classList.remove("dark");
+          icon.textContent = "🌙";
+          showToast("Light mode aktiviert");
+        } else {
+          html.classList.add("dark");
+          icon.textContent = "☀️";
+          showToast("Dark mode aktiviert");
+        }
+        saveToStorage(mdEditor.value);
+      });
+    </script>
+  </body>
 </html>
