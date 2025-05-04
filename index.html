@@ -282,10 +282,10 @@
     }
 
     function cleanSpecialCharacters(text) {
-      // Replace various problematic whitespace characters (like NNBSP, ZWSP, NBSP, etc.) with a standard space
-      // Also removes other zero-width characters
-      const cleanedText = text.replace(/[\u202F\u200B\u2060\uFEFF\u00A0]/g, ' ');
-      // Optionally, replace multiple spaces resulting from replacements with a single space
+      // Replace various problematic whitespace, zero-width, control, and formatting characters with a standard space
+      // Includes characters sometimes used for watermarking/fingerprinting
+      const cleanedText = text.replace(/[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g, ' ');
+      // Replace multiple spaces resulting from replacements with a single space
       return cleanedText.replace(/ +/g, ' ');
     }
 
