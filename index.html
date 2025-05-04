@@ -212,9 +212,16 @@
         isUpdating = true;
         const html = quill.root.innerHTML;
         const markdown = turndownService.turndown(html);
+        
+        // Save current selection and cursor position
+        const currentState = mdView.state;
+        const selection = currentState.selection;
+        
         mdView.dispatch({
-          changes: { from: 0, to: mdView.state.doc.length, insert: markdown }
+          changes: { from: 0, to: currentState.doc.length, insert: markdown },
+          selection: selection // Preserve cursor position by restoring the selection
         });
+        
         // Content is saved via CodeMirror update listener
         isUpdating = false;
       }
