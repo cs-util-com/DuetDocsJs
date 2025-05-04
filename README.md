@@ -2,6 +2,8 @@
 
 A simple, single-file web application that provides a side-by-side Markdown and Rich-Text (HTML) editor with live two-way synchronization. Edit in one pane, and see the changes instantly reflected in the other. Built with vanilla JavaScript and modern libraries delivered via CDN.
 
+**✨ Live Demo:** [**https://cs-util-com.github.io/DuetDocsJs/**](https://cs-util-com.github.io/DuetDocsJs/)
+
 ---
 
 ## Features
