@@ -98,10 +98,10 @@
 
     <!-- Rich‑Text Pane -->
     <div class="flex flex-col w-1/2 h-full">
-      <!-- Updated Header for Rich-Text Pane -->
+      <!-- Header for Rich-Text Pane -->
       <div class="flex justify-between items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <button id="download-html" class="px-3 py-1 text-sm rounded bg-blue-600 hover:bg-blue-700 text-white">Download</button>
-        <!-- Moved and Restyled Theme Toggle Button -->
+        <!-- Theme Toggle Button -->
         <button id="theme-toggle" class="px-3 py-1 text-sm rounded bg-black dark:bg-white text-white dark:text-black hover:bg-gray-700 dark:hover:bg-gray-200 border border-gray-700 dark:border-gray-300">
           <span>🌙</span> Theme
         </button>
@@ -113,7 +113,7 @@
   <!-- Helper Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script> <!-- Updated Quill JS -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
   <!-- App Logic -->
   <script>
@@ -134,7 +134,7 @@
     let lastEditTime = Date.now(); // Track when the last edit occurred
     const EDIT_TIMEOUT = 1000; // Increased from 500ms to 1000ms to provide more buffer time
 
-    // ── Utility helpers (Moved earlier for initialization) ───────────────────
+    // ── Utility helpers ──────────────────────────────────────────────────────
     const SPECIAL_CHARS_REGEX = /[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g;
 
     function containsSpecialCharacters(text) {
@@ -189,7 +189,7 @@
       // Replace multiple spaces resulting from replacements with a single space
       return cleanedText.replace(/ +/g, ' ');
     }
-    // ── End Moved Utility helpers ───────────────────────────────────────────
+    // ── End Utility helpers ───────────────────────────────────────────────────
 
     // Load saved data from localStorage
     function loadFromStorage() {
@@ -320,7 +320,7 @@
       download(md, sanitizeFilename(first) + '.md');
     });
 
-    // Added: Event listener for the Clean Chars button
+    // Event listener for the Clean Chars button
     document.getElementById('clean-chars-md').addEventListener('click', () => {
       const originalMd = mdEditor.value;
       const cleanedMd = cleanSpecialCharacters(originalMd);
