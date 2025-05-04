@@ -36,6 +36,18 @@
     html.dark .ql-fill {
       fill: #e0e0e0 !important;
     }
+    /* CodeMirror editor fullsize styling */
+    .cm-editor {
+      height: 100% !important;
+      width: 100% !important;
+    }
+    .cm-scroller {
+      overflow: auto !important;
+      height: 100% !important;
+    }
+    .cm-content {
+      min-height: 100% !important;
+    }
     /* Toast styles */
     .toast {
       position: fixed;
@@ -113,6 +125,17 @@
     // ── Theme & Persistence ────────────────────────────────────────────────
     const STORAGE_KEY = 'duetDocsData';
     
+    // Converters - Initialize before using them
+    const showdownConverter = new showdown.Converter({
+      tables: true,
+      strikethrough: true,
+      tasklists: true
+    });
+    const turndownService = new TurndownService();
+
+    // Two‑way sync guards
+    let isUpdating = false;
+    
     // Load saved data from localStorage
     function loadFromStorage() {
       try {
@@ -182,17 +205,6 @@
       const html = showdownConverter.makeHtml(savedData.markdown);
       quill.root.innerHTML = html;
     }
-
-    // Converters
-    const showdownConverter = new showdown.Converter({
-      tables: true,
-      strikethrough: true,
-      tasklists: true
-    });
-    const turndownService = new TurndownService();
-
-    // Two‑way sync guards
-    let isUpdating = false;
 
     // Rich‑Text → Markdown
     quill.on('text-change', (delta, oldDelta, source) => {
