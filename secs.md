@@ -6,11 +6,10 @@
 | -- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1 | View & edit the **same content** in **Markdown** (source) *and* **RichText** (HTML) simultaneously.                                            |
 | 2 | **Two‑way live sync**—changes on either side instantly propagate to the other.                                                                  |
-| 3 | **Copy** buttons for raw Markdown and rendered HTML.                                                                                            |
-| 4 | **Download** buttons—`.md` for the Markdown pane, `.html` for the Rich pane—using the first non‑empty line (sanitized) as the filename.         |
-| 5 | **Responsive split layout** that fills the browser window; no hard requirement for a draggable splitter, just fluid resizing with the viewport. |
-
-Non‑goals(may be added later): image uploads, full WYSIWYG toolbars, dark‑mode switch, ZIP export.
+| 3 | **Download** buttons—`.md` for the Markdown pane, `.html` for the Rich pane—using the first non‑empty line (sanitized) as the filename.         |
+| 4 | **Responsive split layout** that fills the browser window; fluid resizing with the viewport.                                                    |
+| 5 | **Dark/Light Theme Toggle** with persistence.                                                                                                   |
+| 6 | **Content Persistence** using `localStorage`.                                                                                                   |
 
 ---
 
@@ -18,56 +17,56 @@ Non‑goals(may be added later): image uploads, full WYSIWYG toolbars, dark‑mo
 
 | Concern                | Library                                           | Reason                                                                  |
 | ---------------------- | ------------------------------------------------- | ----------------------------------------------------------------------- |
-| Markdown source editor | **CodeMirror6** (`@codemirror/*` CDN ES‑modules) | MIT license, modern, built‑in Markdown mode & syntax highlighting.      |
-| Rich‑text editor       | **Quill1.3** (Snow theme)                        | MIT license, compact (\~30kB gz), well‑documented, clipboard‑friendly. |
-| MD→HTML              | **Showdown2**                                    | Tiny, versatile conversion, keeps tables / code fences.                 |
-| HTML→MD              | **Turndown7**                                    | Small, robust reverse conversion.                                       |
+| Markdown source editor | **Plain `<textarea>`**                            | Simple, universally compatible, no extra dependencies.                  |
+| Rich‑text editor       | **Quill2.0.2** (Snow theme)                       | MIT license, modern, well‑documented, clipboard‑friendly.               |
+| MD→HTML              | **Showdown2.1.0**                                 | Tiny, versatile conversion, keeps tables / code fences.                 |
+| HTML→MD              | **Turndown7.1.2**                                 | Small, robust reverse conversion.                                       |
+| UI/Styling             | **Tailwind CSS** (CDN)                            | Utility-first CSS framework for rapid UI development.                   |
 | Build/Serve            | *None* (pure single HTML file)                    | Runs from local disk or a static host.                                  |
 
-Total payload ≈300kB gzip (all CDN).
 
 ---
 
 #### 3 Architecture & Flow
 
 ```
- CodeMirror   ──onInput──▶  Showdown ──▶ Quill.setContents()
+ <textarea>   ──onInput──▶  Showdown ──▶ Quill.root.innerHTML = html
    ▲   │                              │         │
-   │   └── dispatch(from Quill) ◀─────┘  Turndown◀──onTextChange── Quill
+   │   └── .value = markdown ◀────────┘  Turndown◀──onTextChange── Quill
 ```
 
-* **Debounce/lock:** A boolean `isUpdating` guards against infinite ping‑pong loops.
+* **Debounce/lock:** A boolean `isUpdating` guards against infinite ping‑pong loops. An `activeEditor` variable and `lastEditTime` timestamp help prevent updates collisions when switching between panes quickly.
 * **Conversion fidelity:**
-
-  * **Markdown → HTML:** Showdown tables, strike‑through, autolinks, task‑lists enabled.
+  * **Markdown → HTML:** Showdown tables, strike‑through, task‑lists enabled.
   * **HTML → Markdown:** Turndown default rules; Quill’s semantic HTML keeps noise minimal.
-* **State source of truth:** Whichever pane the user last touched becomes the authoritative version until the next edit.
+* **State source of truth:** Whichever pane the user last interacted with becomes the authoritative version.
+* **Persistence:** Content and theme preference are saved to `localStorage` on every change and loaded on startup.
 
 ---
 
 #### 4 UI & UX Details
 
-* **Layout:** CSSFlex with two `.pane` columns (50% each, grow/shrink with window).
-* **Toolbars:** Simple `<button>` strips pinned above each editor.
-
-  * Copy uses *`navigator.clipboard.writeText()`* with fallback alert if denied.
-  * Download uses a Blob + hidden anchor (`download` attribute).
+* **Layout:** Tailwind CSS Flexbox with two `.pane` columns (responsive, stack vertically on smaller screens).
+* **Toolbars:** Simple `<button>` strips pinned above each editor pane for Download actions. A theme toggle button is in the top navigation bar.
+* **Download:** Uses a Blob + hidden anchor (`download` attribute).
 * **Filename rule:** first trimmed line → strip non‑alphanum/space & cut at 50chars → append `.md` or `.html`.
+* **Feedback:** Toast notifications confirm actions like downloads and theme changes.
 * **Accessibility:**
-
   * Buttons are native `<button>` elements (keyboard & screen‑reader friendly).
-  * Editors get `aria-label` attributes via their containers.
   * Focus rings preserved.
+  * (Future: Add `aria-label` to editor containers).
 * **Error handling:**
-
-  * Clipboard failure → `alert('Copy failed: '+ err.message)`.
+  * `localStorage` load/save errors are logged to the console and may trigger a toast.
   * Download always succeeds offline (dataURI).
-  * Try/catch around both conversion calls; on error the opposite pane receives plain text.
+  * Try/catch around conversion calls (currently logs errors, could show toast).
 
 ---
 
 #### 7 Possible future Enhancements
 
+* Copy buttons for Markdown and HTML panes.
 * Toolbar toggle for Markdown formatting (bold, italic, heading).
 * Image drag‑and‑drop with base64 embed or upload callback.
 * Offline PWA manifest & service‑worker cache.
+* Add `aria-label` attributes to editor containers for better accessibility.
+* Show toast notifications on conversion errors.
