@@ -134,7 +134,7 @@
     let isUpdating = false;
     let activeEditor = 'markdown'; // Track which editor is currently active: 'markdown' or 'richtext'
     let lastEditTime = Date.now(); // Track when the last edit occurred
-    const EDIT_TIMEOUT = 500; // Time in ms to consider the user "active" in an editor
+    const EDIT_TIMEOUT = 1000; // Increased from 500ms to 1000ms to provide more buffer time
     
     // Load saved data from localStorage
     function loadFromStorage() {
@@ -198,7 +198,9 @@
         quill.root.innerHTML = html;
         // Save content to localStorage on change
         saveToStorage(markdownText);
-        isUpdating = false;
+        setTimeout(() => {
+          isUpdating = false;
+        }, 10); // Small delay to ensure complete handling of the event
       }
     });
 
@@ -228,11 +230,12 @@
         activeEditor = 'richtext';
         lastEditTime = Date.now();
         
-        // If the user is actively editing in markdown, don't update it
+        // IMPROVED: More strict check to prevent markdown updates while actively typing
         const isUserActiveInMarkdown = activeEditor === 'markdown' && 
                                      (Date.now() - lastEditTime < EDIT_TIMEOUT);
+        
         if (isUserActiveInMarkdown) {
-          return;
+          return; // Skip updating markdown if user is actively typing there
         }
 
         isUpdating = true;
@@ -244,7 +247,10 @@
         
         // Save content to localStorage
         saveToStorage(markdown);
-        isUpdating = false;
+        
+        setTimeout(() => {
+          isUpdating = false;
+        }, 10); // Small delay to ensure complete handling of the event
       }
     });
 
