@@ -1,0 +1,16 @@
+{
+  "name": "duetdocsjs",
+  "version": "1.0.0",
+  "description": "A simple, single-file web application that provides a side-by-side Markdown and Rich-Text (HTML) editor with live two-way synchronization. Edit in one pane, and see the changes instantly reflected in the other. Built with vanilla JavaScript and modern libraries delivered via CDN.",
+  "main": "converter.js",
+  "scripts": {
+    "test": "node converter.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "showdown": "^2.1.0",
+    "turndown": "^7.2.0"
+  }
+}

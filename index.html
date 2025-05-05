@@ -180,45 +180,19 @@
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 
     <!-- App Logic -->
-    <script>
+    <script type="module">
+      // Import functions directly from converter.js module
+      import { markdownToHtml, htmlToMarkdown } from './converter.js';
+
       // ── Theme & Persistence ────────────────────────────────────────────────
       const STORAGE_KEY = "duetDocsData";
 
-      // Converters - Initialize before using them
-      const showdownConverter = new showdown.Converter({
-        tables: true,
-        strikethrough: true,
-        tasklists: true,
-        simpleLineBreaks: true,
-        parseImgDimensions: true,
-        literalMidWordUnderscores: true,
-        smartIndentationFix: true,
-      });
-      const turndownService = new TurndownService({
-        headingStyle: "atx",
-        bulletListMarker: "*",
-        codeBlockStyle: "fenced",
-      });
+      // Converters are now handled in converter.js
+      // const showdownConverter = ... (Removed)
+      // const turndownService = ... (Removed)
 
-      // ── NEW: Normalise Quill list markup so Turndown keeps bullets ────────
-      function normalizeQuillLists(html) {
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = html;
-        wrapper.querySelectorAll("ol").forEach((ol) => {
-          const lis = [...ol.children].filter((c) => c.tagName === "LI");
-          if (
-            lis.length &&
-            lis.every((li) => li.getAttribute("data-list") === "bullet")
-          ) {
-            const ul = document.createElement("ul");
-            lis.forEach((li) => li.removeAttribute("data-list"));
-            ul.innerHTML = ol.innerHTML;
-            ol.replaceWith(ul);
-          }
-        });
-        return wrapper.innerHTML;
-      }
-      // ── End list normaliser ────────────────────────────────────────────────
+      // normalizeQuillLists is now handled in converter.js
+      // function normalizeQuillLists(html) { ... } (Removed)
 
       // Two‑way sync guards
       let isUpdating = false;
@@ -324,9 +298,10 @@
         activeEditor = "markdown";
         lastEditTime = Date.now();
         isUpdating = true;
-        const html = showdownConverter.makeHtml(mdEditor.value);
+        // Use imported function
+        const html = markdownToHtml(mdEditor.value);
         const hadFocus = document.activeElement === mdEditor;
-        quill.setContents([]);
+        quill.setContents([]); // Clear Quill before pasting
         quill.clipboard.dangerouslyPasteHTML(html);
         saveToStorage(mdEditor.value);
         updateCleanBtn();
@@ -376,14 +351,15 @@
 
       // Populate Quill if saved markdown exists
       if (savedData.markdown) {
-        quill.setContents([]);
+        quill.setContents([]); // Clear Quill before pasting
+        // Use imported function
         quill.clipboard.dangerouslyPasteHTML(
-          showdownConverter.makeHtml(savedData.markdown),
+          markdownToHtml(savedData.markdown),
           "api"
         );
       }
 
-      // Rich‑text → Markdown (with bullet fix)
+      // Rich‑text → Markdown (with bullet fix handled in converter.js)
       quill.on("text-change", (_, __, source) => {
         if (source !== "user" || isUpdating) return;
         activeEditor = "richtext";
@@ -394,8 +370,8 @@
         if (isEditingMarkdown) return;
         isUpdating = true;
         const html = quill.root.innerHTML;
-        const fixedHtml = normalizeQuillLists(html); // <── IMPORTANT FIX
-        const md = turndownService.turndown(fixedHtml);
+        // Use imported function (normalization happens inside)
+        const md = htmlToMarkdown(html);
         mdEditor.value = md;
         saveToStorage(md);
         setTimeout(() => (isUpdating = false), 10);
