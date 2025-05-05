@@ -97,6 +97,8 @@
           flex-basis: 50%; /* Reset basis for vertical */
           border-right: none; /* Remove side border */
           border-bottom: 1px solid #d1d5db; /* Add bottom border */
+          min-height: 0; /* Allow shrinking below content size */
+          overflow: hidden; /* Hide overflow from the pane itself */
         }
         html.dark #editor-wrapper > div:not(#drag-handle) {
            border-bottom-color: #4b5563; /* Dark mode border */
