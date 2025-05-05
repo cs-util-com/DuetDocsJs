@@ -5,10 +5,7 @@
 ##### Header 5
 ###### Header 6
 
-###### Horizontal Rule
----
-
-## Rich Text
+# Rich Text
 
 *Italic* *Italic* 
 **Bold** **Bold** ***Bold Italic*** 
@@ -17,7 +14,7 @@
 @mention 
 <del>some html</del>
 
-## Lists
+# Lists
 
 #### Ordered
 
@@ -40,10 +37,10 @@
 * [ ] Task Open 
 * [x] Task Done
 
-## Escape
+# Escape
 Escape \\*asterisks\\*
 
-## Links
+# Links
 
 [Inline](https://example.com)
 
@@ -53,7 +50,7 @@ Escape \\*asterisks\\*
 
 [ref]: https://example.org
 
-## Images
+# Images
 
 #### Inline: 
 ![Cat](https://picsum.photos/100)
@@ -64,15 +61,15 @@ Escape \\*asterisks\\*
 [logo]: https://picsum.photos/64
 
 #### Clickable Image with a link:
-[![Video](https://picsum.photos/100)](https://youtu.be/dQw4w9WgXcQ)
+[![Video](https://picsum.photos/120)](https://youtu.be/dQw4w9WgXcQ)
 
-## Footnotes
+# Footnotes
 
 Footnote here[^1] and inline footnote^\[Quick note].
 
 [^1]: Footnote **supports** markdown.
 
-## Code
+# Code
 
 `Inline code` and `code blocks`:
 
@@ -80,19 +77,19 @@ Footnote here[^1] and inline footnote^\[Quick note].
 console.log('Hi');
 ```
 
-## Tables
+# Tables
 
 | Left | Center | Right |
 | :--- | :----: | ----: |
 | a    |    b   |     c |
 | d    |    e   |     f |
 
-## Blockquote
+# Blockquote
 
 > Quote
 >
 > > Nested
 
-## Inline HTML
+# Inline HTML
 
 <kbd>Ctrl</kbd> + <kbd>C</kbd>
