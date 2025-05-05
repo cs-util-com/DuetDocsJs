@@ -91,9 +91,21 @@
           flex-direction: column;
         }
 
-        #editor-wrapper > div {
+        #editor-wrapper > div:not(#drag-handle) { /* Target panes, not handle */
           width: 100% !important;
-          height: 50% !important;
+          height: auto !important; /* Let flex-basis control height */
+          flex-basis: 50%; /* Reset basis for vertical */
+          border-right: none; /* Remove side border */
+          border-bottom: 1px solid #d1d5db; /* Add bottom border */
+        }
+        html.dark #editor-wrapper > div:not(#drag-handle) {
+           border-bottom-color: #4b5563; /* Dark mode border */
+        }
+
+        #drag-handle {
+          flex-basis: 5px; /* Height of handle */
+          width: 100%;
+          cursor: row-resize; /* Vertical resize cursor */
         }
       }
     </style>
@@ -106,7 +118,9 @@
     <div id="editor-wrapper" class="flex flex-1 overflow-hidden">
       <!-- Markdown Pane -->
       <div
-        class="flex flex-col w-1/2 h-full border-r border-gray-300 dark:border-gray-700"
+        id="md-pane"
+        class="flex flex-col h-full border-r border-gray-300 dark:border-gray-700"
+        style="flex-basis: 50%;" 
       >
         <div
           class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
@@ -131,8 +145,11 @@
         ></textarea>
       </div>
 
+      <!-- Draggable Handle -->
+      <div id="drag-handle" class="bg-gray-300 dark:bg-gray-600 cursor-col-resize" style="flex-basis: 5px; flex-shrink: 0;"></div>
+
       <!-- Rich‑Text Pane -->
-      <div class="flex flex-col w-1/2 h-full">
+      <div id="rt-pane" class="flex flex-col h-full" style="flex-basis: 50%;"> 
         <!-- Header for Rich-Text Pane -->
         <div
           class="flex justify-between items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
@@ -425,6 +442,86 @@
         }
         saveToStorage(mdEditor.value);
       });
+
+      // ── Drag-to-Resize Logic ───────────────────────────────────────────────
+      const dragHandle = document.getElementById('drag-handle');
+      const editorWrapper = document.getElementById('editor-wrapper');
+      const mdPane = document.getElementById('md-pane');
+      const rtPane = document.getElementById('rt-pane');
+      let isDragging = false;
+
+      const startDragging = (e) => {
+        isDragging = true;
+        // Add classes to prevent text selection and show resizing cursor globally
+        document.body.style.userSelect = 'none';
+        document.body.style.pointerEvents = 'none'; // Prevent interaction with iframes/objects
+        editorWrapper.style.cursor = window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('touchmove', drag, { passive: false }); // Use passive: false for touch
+        document.addEventListener('mouseup', stopDragging);
+        document.addEventListener('touchend', stopDragging);
+      };
+
+      const drag = (e) => {
+        if (!isDragging) return;
+
+        // Prevent scrolling on touch devices during drag
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
+
+        const pointerX = e.clientX ?? e.touches?.[0]?.clientX;
+        const pointerY = e.clientY ?? e.touches?.[0]?.clientY;
+
+        if (pointerX === undefined || pointerY === undefined) return; // No coordinates
+
+        const rect = editorWrapper.getBoundingClientRect();
+        const isVertical = window.innerWidth <= 768; // Check layout direction
+
+        let firstPanePercent;
+
+        if (isVertical) {
+          // Vertical layout (mobile) - resize height
+          const dragPos = pointerY - rect.top;
+          const totalHeight = rect.height;
+          firstPanePercent = Math.max(10, Math.min(90, (dragPos / totalHeight) * 100)); // Clamp between 10% and 90%
+          mdPane.style.flexBasis = `${firstPanePercent}%`;
+          rtPane.style.flexBasis = `${100 - firstPanePercent}%`;
+        } else {
+          // Horizontal layout (desktop) - resize width
+          const dragPos = pointerX - rect.left;
+          const totalWidth = rect.width;
+          firstPanePercent = Math.max(10, Math.min(90, (dragPos / totalWidth) * 100)); // Clamp between 10% and 90%
+          mdPane.style.flexBasis = `${firstPanePercent}%`;
+          rtPane.style.flexBasis = `${100 - firstPanePercent}%`;
+        }
+      };
+
+      const stopDragging = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        // Remove global styles/listeners
+        document.body.style.userSelect = '';
+        document.body.style.pointerEvents = '';
+        editorWrapper.style.cursor = '';
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('touchmove', drag);
+        document.removeEventListener('mouseup', stopDragging);
+        document.removeEventListener('touchend', stopDragging);
+      };
+
+      dragHandle.addEventListener('mousedown', startDragging);
+      dragHandle.addEventListener('touchstart', startDragging);
+
+      // Adjust cursor on resize
+      window.addEventListener('resize', () => {
+          dragHandle.style.cursor = window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
+          // Reset flex-basis if switching layout? Optional, might be jarring.
+          // For now, let's keep the user's adjusted size.
+      });
+      // ── End Drag-to-Resize Logic ───────────────────────────────────────────
     </script>
   </body>
 </html>
