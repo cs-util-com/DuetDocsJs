@@ -12,5 +12,8 @@
   "devDependencies": {
     "showdown": "^2.1.0",
     "turndown": "^7.2.0"
+  },
+  "dependencies": {
+    "turndown-plugin-gfm": "^1.0.2"
   }
 }

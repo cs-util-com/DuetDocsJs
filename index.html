@@ -178,11 +178,14 @@
     <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+    
+    <!-- Our converter script - must come after the libraries it depends on -->
+    <script src="./converter.js"></script>
 
     <!-- App Logic -->
     <script type="module">
-      // Import functions directly from converter.js module
-      import { markdownToHtml, htmlToMarkdown } from './converter.js';
+      // Import functions from converter.js through the global converter object
+      const { markdownToHtml, htmlToMarkdown } = window.converter;
 
       function mainAppInitializer() {
         // ── Theme & Persistence ────────────────────────────────────────────────
@@ -489,11 +492,11 @@
       } // End of mainAppInitializer
 
       function waitForLibrariesAndRun() {
-        if (window.showdown && window.TurndownService && window.Quill) {
+        if (window.showdown && window.TurndownService && window.Quill && window.converter) {
           console.log("Libraries loaded, initializing app.");
           mainAppInitializer();
         } else {
-          console.log("Waiting for libraries (Showdown, Turndown, Quill)...");
+          console.log("Waiting for libraries...");
           setTimeout(waitForLibrariesAndRun, 100); // Check again in 100ms
         }
       }
