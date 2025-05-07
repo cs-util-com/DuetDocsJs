@@ -1,56 +1,80 @@
-// filepath: /workspaces/DuetDocsJs/converter.js
 // Determine environment and load dependencies
-let Showdown, TurndownService;
-const isNode = typeof window === 'undefined';
+// No longer needed for Node.js only context in this file
+// const isNode = typeof window === 'undefined';
 
-if (isNode) {
-  // Running in Node.js environment
-  Showdown = require('showdown');
-  TurndownService = require('turndown');
-} else {
-  // Running in browser environment
-  Showdown = window.showdown;
-  TurndownService = window.TurndownService;
-}
+let showdownConverter;
+let turndownService;
 
-// Initialize converters
-const showdownConverter = new Showdown.Converter({
+const showdownOptions = {
   tables: true,
   strikethrough: true,
   tasklists: true,
-  simpleLineBreaks: true,
+  simpleLineBreaks: false,
   parseImgDimensions: true,
   literalMidWordUnderscores: true,
-  smartIndentationFix: true,
-});
+  ghCompatibleHeaderId: true,
+  footnotes: true,
+  requireSpaceBeforeHeadingText: true,
+  ghMentions: false,
+};
 
-const turndownService = new TurndownService({
+const turndownOptions = {
   headingStyle: 'atx',
   bulletListMarker: '*',
   codeBlockStyle: 'fenced',
-});
-
-// Helper function (remains local)
-function normalizeQuillLists(html) {
-  if (isNode) {
-      // Basic fallback for Node.js (no DOM manipulation)
-      // More robust server-side DOM might be needed for perfect parity (e.g., jsdom)
-      return html;
+  emDelimiter: '*',
+  strongDelimiter: '**',
+  linkStyle: 'inlined',
+  keepReplacement: function (content, node) {
+    return node.outerHTML;
   }
-  // Browser environment with DOM access
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = html;
-  // Example normalization: Convert <ol><li data-list="bullet">...</li></ol> to <ul><li>...</li></ul>
-  wrapper.querySelectorAll('ol').forEach((ol) => {
-      const lis = [...ol.children].filter((c) => c.tagName === 'LI');
-      if (lis.length && lis.every((li) => li.getAttribute('data-list') === 'bullet')) {
-          const ul = document.createElement('ul');
-          lis.forEach((li) => li.removeAttribute('data-list')); // Clean up attribute
-          ul.innerHTML = ol.innerHTML; // Move content
-          ol.replaceWith(ul);
-      }
-  });
-  return wrapper.innerHTML;
+};
+
+function getShowdownConverter() {
+  if (!showdownConverter) {
+    if (typeof window !== 'undefined' && window.showdown) {
+      showdownConverter = new window.showdown.Converter(showdownOptions);
+    } else {
+      // This case should ideally not be hit in the browser if CDN loads.
+      // Fallback or error for Node.js if not handled by a different entry point.
+      console.error("Showdown library not available.");
+      // Return a dummy converter or throw error to prevent further issues
+      return { makeHtml: (md) => md }; 
+    }
+  }
+  return showdownConverter;
+}
+
+function getTurndownService() {
+  if (!turndownService) {
+    if (typeof window !== 'undefined' && window.TurndownService) {
+      turndownService = new window.TurndownService(turndownOptions);
+      // Apply rules after service initialization
+      turndownService.keep(['kbd']);
+      turndownService.addRule('strikethrough', {
+        filter: ['del', 's', 'strike'],
+        replacement: function (content) {
+          return '~~' + content + '~~';
+        }
+      });
+      turndownService.addRule('taskListItems', {
+        filter: function (node, options) {
+          return node.nodeName === 'LI' && node.firstChild && node.firstChild.nodeName === 'INPUT' && node.firstChild.type === 'checkbox';
+        },
+        replacement: function (content, node, options) {
+          const checkbox = node.firstChild;
+          const checked = checkbox.checked;
+          let textContent = node.textContent || '';
+          textContent = textContent.replace(/^\\[ \\xX\\\\]\\s*/, '').trim();
+          return (checked ? '* [x] ' : '* [ ] ') + textContent;
+        }
+      });
+    } else {
+      console.error("Turndown library not available.");
+      return { turndown: (html) => html };
+    }
+  }
+  return turndownService;
 }
 
 /**
@@ -59,23 +83,14 @@ function normalizeQuillLists(html) {
  * @returns {string} The resulting HTML string.
  */
 export function markdownToHtml(markdown) {
-  return showdownConverter.makeHtml(markdown);
+  return getShowdownConverter().makeHtml(markdown);
 }
 
 /**
  * Converts HTML text to Markdown.
- * Includes normalization for Quill list structures.
  * @param {string} html - The HTML string.
  * @returns {string} The resulting Markdown string.
  */
 export function htmlToMarkdown(html) {
-  const normalizedHtml = normalizeQuillLists(html);
-  return turndownService.turndown(normalizedHtml);
-}
-
-// Conditional export for Node.js (CommonJS) environment if needed by tests
-// Note: This dual export approach can sometimes be problematic. 
-// If tests fail, consider aligning test environment to use ES modules.
-if (isNode) {
-  module.exports = { markdownToHtml, htmlToMarkdown };
+  return getTurndownService().turndown(html);
 }
