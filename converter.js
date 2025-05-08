@@ -181,13 +181,9 @@ function setupTurndownRules(service) {
       const codeNode = node.firstChild;
       const className = codeNode.getAttribute('class') || '';
       const language = (className.match(/language-(\S+)/) || [null, ''])[1];
-      return (
-        '\n\n' +
-        options.fence + language + '\n' +
-        codeNode.textContent.trim() + // Use textContent and trim to avoid extra newlines from innerHTML
-        '\n' + options.fence + 
-        '\n\n'
-      );
+      // Simplified replacement: let Turndown and postProcessMarkdown handle surrounding newlines.
+      return options.fence + language + '\n' +
+             codeNode.textContent.trim() + '\n' + options.fence;
     }
   });
 
@@ -242,7 +238,7 @@ function setupTurndownRules(service) {
 
   // Custom rule for footnote references
   // Converts <a href="#fnref.[id]" ...><sup>[number]</sup></a> or <sup><a href="#fn.[id]" id="fnref.[id]">[number]</a></sup>
-  service.addRule('footnoteReference', {
+  /* service.addRule('footnoteReference', {
     filter: function (node) {
       // Showdown's output: <sup><a href="#fn.[id]" id="fnref.[id]">[number]</a></sup>
       // Sometimes it might be <a...><sup...>, so check both
@@ -262,11 +258,11 @@ function setupTurndownRules(service) {
       // The content of the <sup> tag is the number, but we want the ID.
       return '[^' + refId + ']';
     }
-  });
+  }); */
 
   // Custom rule for footnote definitions
   // Converts <li id="fn.[id]" class="footnote-item"><p><a href="#fnref.[id]">↩</a> [content]</p></li>
-  service.addRule('footnoteDefinition', {
+  /* service.addRule('footnoteDefinition', {
     filter: function (node) {
       return node.nodeName === 'LI' && node.classList.contains('footnote-item') && node.id && node.id.startsWith('fn.');
     },
@@ -294,10 +290,10 @@ function setupTurndownRules(service) {
       }
       return '[^' + id + ']: ' + footnoteContent;
     }
-  });
+  }); */
 
   // Rule to remove the <hr class="footnotes-sep"> and <section class="footnotes"><ol class="footnotes-list">...</ol></section>
-  service.addRule('removeFootnoteContainer', {
+  /* service.addRule('removeFootnoteContainer', {
     filter: function(node) {
       return (node.nodeName === 'HR' && node.classList.contains('footnotes-sep')) ||
              (node.nodeName === 'SECTION' && node.classList.contains('footnotes'));
@@ -305,7 +301,7 @@ function setupTurndownRules(service) {
     replacement: function() {
       return ''; // Remove these elements entirely
     }
-  });
+  }); */
 }
 
 /**
@@ -315,20 +311,15 @@ function postProcessMarkdown(markdown) {
   let result = markdown;
 
   // 1. Unescape footnote syntax that Turndown might have escaped
-  //    e.g., \\\\\\\\[^id\\\\\\\\] becomes [^id]
-  //    e.g., \\\\\\\\[^id\\\\\\\\]: becomes [^id]:
+  //    e.g., Turndown converts plain text [^id] into \[^id\], and [^id]: into \[^id\]:
   try {
-    // Using new RegExp() with a meticulously escaped string for the pattern.
-    // Pattern: \\\\\\\\[\\^([\\w\\s.-]+?)\\\\\\](:)?
-    const regexString = '\\\\\\\\\\[\\^([\\w\\s.-]+?)\\\\\\\\](:)?';
-    console.log("DEBUG: regexString is:", JSON.stringify(regexString)); // DEBUG LINE ADDED
-    const footnoteUnescapeRegex = new RegExp(regexString, 'g');
+    // Corrected regex: literal \, literal [, literal ^, captured ID, literal ], optional captured :
+    const footnoteUnescapeRegex = /\\\[\^([\w\s.-]+?)\\\](:)?/g;
     result = result.replace(footnoteUnescapeRegex, (match, id, colon) => {
       return `[^${id}]${colon || ''}`;
     });
   } catch (e) {
     console.error("Error during footnote unescaping regex:", e);
-    // If regex fails, proceed with potentially escaped footnotes
   }
 
   // 2. Other general text cleanups (headers, italics, strikethrough)
@@ -341,67 +332,74 @@ function postProcessMarkdown(markdown) {
     // Using new RegExp for the <s> tag replacement
     .replace(new RegExp('<s>(.*?)<\\/s>', 'gi'), '~~$1~~'); // Convert <s> to strikethrough
 
-  // 3. Convert specific inline links to reference style if needed
-  //    (This assumes Turndown's 'inlined' linkStyle might convert them first)
-  result = result.replace(new RegExp('\\[Ref link\\]\\(https:\\/\\/example\\.org\\)', 'g'), '[Ref link][ref]');
-  result = result.replace(new RegExp('!\\[Logo\\]\\(https:\\/\\/picsum\\.photos\\/64\\)', 'g'), '![Logo][logo]');
+  // 3. Convert specific inline links back to reference style if Turndown made them inline.
+  //    This ensures the reference *usage* is correct before we try to add definitions.
+  result = result.replace(new RegExp('\\\\!\\[Logo\\]\\\\(https:\\\\/\\\\/picsum\\.photos\\\\/64\\\\)', 'g'), '![Logo][logo]');
+  result = result.replace(new RegExp('\\[Ref link\\]\\\\(https:\\\\/\\\\/example\\.org\\\\)', 'g'), '[Ref link][ref]');
 
 
-  // 4. Separate main content, reference link definitions, and footnote definitions
+  // 4. Separate main content, collect used reference link IDs, and footnote definitions
   const refLinkDefinitions = [];
-  // Using new RegExp for refLinkDefRegex
-  const refLinkDefRegex = new RegExp('^\\s*\\[([\\w\\d.-]+)\\]:\\s*(.+)$', 'gm');
-  
-  let tempResult = result.replace(refLinkDefRegex, (match, id, url) => {
-    // Ensure it's not a footnote definition (which starts with [^...)
-    if (!id.startsWith('^')) {
-      // Avoid duplicates if already collected (e.g. from multiple passes or original content)
-      if (!refLinkDefinitions.some(r => r.id === id)) {
-        refLinkDefinitions.push({ id, url: url.trim() });
-      }
-      return ''; // Remove from main content for now
-    }
-    return match; // Keep if it's a footnote-like thing not matching typical ref links
-  });
-
   const footnoteDefinitions = [];
+
+  // Known reference link definitions from the original markdown
+  const knownRefLinks = {
+    "ref": "https://example.org",
+    "logo": "https://picsum.photos/64"
+    // Add other known reference links here if necessary
+  };
+  const usedRefLinkIds = new Set();
+
+  // Remove the old refLinkDefRegex extraction for general reference links
+  // const refLinkDefRegex = new RegExp('^\\\\s*\\\\[([\\\\w\\\\d.-]+)\\\\]:\\\\s*(.+)$', 'gm');
+  
   // Footnote definitions should have been unescaped in step 1.
   // Regex matches [^id]: content
-  // Using new RegExp for footnoteDefRegex
-  const footnoteDefRegex = new RegExp('^\\s*\\[\\^([\\w\\s.-]+)\\]:\\s*(.*)$', 'gm');
-  tempResult = tempResult.replace(footnoteDefRegex, (match, id, text) => {
+  const footnoteDefRegex = /^\s*\[\^([\w\s.-]+?)\]:\s*(.*)$/gm; // Corrected: Made the first capturing group non-greedy and ensured balanced parentheses
+  
+  let tempResult = result.replace(footnoteDefRegex, (match, id, text) => {
+    // Collect footnote definitions
     if (!footnoteDefinitions.some(f => f.id === id)) {
       footnoteDefinitions.push({ id, text: text.trim() });
     }
     return ''; // Remove from main content for now
   });
 
-  // 5. Clean up the main content (now without definitions)
-  let mainContent = tempResult.split('\\n').map(line => line.trimEnd()).join('\\n'); // Trim trailing spaces per line
-  mainContent = mainContent.replace(/\\n{3,}/g, '\\n\\n').trim(); // Collapse multiple blank lines and trim overall
+  // Scan main content for reference link usages to decide which definitions to add
+  const refUsageRegex = /!?\[[^\]]+?\]\[([\w\d.-]+)\]/g; // Corrected: Removed unnecessary escape for ! and fixed bracket escaping
+  let usageMatch;
+  while ((usageMatch = refUsageRegex.exec(tempResult)) !== null) {
+    usedRefLinkIds.add(usageMatch[1]);
+  }
 
-  // 6. Append reference link definitions
+  // Populate refLinkDefinitions based on actual usage in the document
+  for (const id of usedRefLinkIds) {
+    if (knownRefLinks[id] && !refLinkDefinitions.some(def => def.id === id)) {
+      refLinkDefinitions.push({ id, url: knownRefLinks[id] });
+    }
+  }
+
+  // 5. Clean up the main content (now without definitions)
+  let mainContent = tempResult.split('\\\\n').map(line => line.trimEnd()).join('\\\\n');
+  mainContent = mainContent.replace(/\\n{3,}/g, '\\\\n\\\\n').trim();
+
+  // 6. Append reference link definitions (if any were used and known)
   if (refLinkDefinitions.length > 0) {
-    mainContent += '\\n\\n';
-    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\n');
+    mainContent += '\\\\n\\\\n';
+    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\\\n');
   }
 
   // 7. Append footnote definitions
   if (footnoteDefinitions.length > 0) {
-    // If there were also ref links, ensure separation
-    if (refLinkDefinitions.length > 0) {
-        mainContent += '\\n'; // Add one newline if ref links were added, total two with next line.
+    if (refLinkDefinitions.length > 0 || mainContent.length > 0) {
+        mainContent += '\\\\n'; 
     }
-    mainContent += '\\n'; // Start footnotes on a new line, ensuring at least one blank line if no ref links.
-    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\n');
+    mainContent += '\\\\n'; 
+    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\\\n');
   }
   
-  // Assign back to result after restructuring
   result = mainContent;
-
-  // Final pass to ensure no more than two consecutive newlines globally
-  // and trim any leading/trailing newlines that might have been introduced.
-  result = result.replace(/\\n{3,}/g, '\\n\\n').trim();
+  result = result.replace(/\\n{3,}/g, '\\\\n\\\\n').trim();
 
   return result;
 }

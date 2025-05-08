@@ -29,6 +29,74 @@ console.log("Generated output files: roundtrip-result.md, html-intermediate.html
 
 // Simple check for the presence of key elements in the roundtrip output
 function checkForKeyElements(originalMd, roundtripMd) {
+  // Define expected structures from originalMarkdown for stricter checking
+  const expectedOrderedListBlock = `\
+1. Ordered   
+   1. Sub ordered 1
+   1. Sub ordered 2   
+2. Another
+   * Sub unordered
+     1. Sub ordered 1
+     1. Sub ordered 2`;
+
+  const expectedBulletListBlock = `\
+* Bullet
+* Bullet
+- Also Bullet
+- Also Bullet`; // Note: Turndown is expected to convert '-' to '*' for consistency.
+                           // So the actual check will be for '*'
+
+  const expectedTaskListBlock = `\
+* [ ] Task Open 
+* [x] Task Done`;
+
+  const expectedTableBlock = `\
+| Left | Center | Right |
+| :--- | :----: | ----: |
+| a    |    b   |     c |
+| d    |    e   |     f |`;
+
+  const expectedFencedCodeBlock = `\
+\`\`\`js
+console.log('Hi');
+\`\`\``;
+
+  const expectedBlockquoteBlock = `\
+> Quote
+> 
+> > Nested`;
+
+  // Helper to create a regex from a multiline string, escaping special chars
+  // and making whitespace flexible (to a degree) but structure rigid.
+  const createBlockRegex = (blockString) => {
+    const escaped = blockString.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); // Escape regex special chars
+    // Replace multiple spaces/tabs with \\s+ for flexibility in spacing within lines,
+    // but preserve newlines strictly.
+    const regexStr = escaped.replace(/ +/g, '\\\\s+');
+    return new RegExp(regexStr.replace(/\\\n/g, '\\n')); // Ensure newlines are literal
+  };
+  
+  const createExactBlockRegex = (blockString) => {
+    // Characters that are special in regular expressions
+    const metaCharsRegex = /[\\^$.*+?()[\]{}|]/g;
+    // Define a literal backslash string. In JS, '\\' becomes a single backslash.
+    const literalBackslash = '\\\\'; 
+    // The replacement string should be a literal backslash followed by the matched substring ($&).
+    const regexSafeReplacement = literalBackslash + '$&';
+
+    // Escape special regex characters
+    let escaped = blockString.replace(metaCharsRegex, regexSafeReplacement);
+    
+    // Normalize line endings to \n for the regex pattern string
+    escaped = escaped.replace(/\r\n|\r|\n/g, '\\n');
+    
+    // Make spaces flexible (allow zero or more whitespace characters for every space)
+    escaped = escaped.replace(/ /g, '\\s*'); 
+    
+    return new RegExp(escaped, 'm'); // 'm' for multiline matching
+  };
+
+
   const checks = [
     // General Structure & Headers
     { name: 'H1 Header', expected: "# Markdown Examples", actual: roundtripMd.includes("# Markdown Examples") },
@@ -40,17 +108,25 @@ function checkForKeyElements(originalMd, roundtripMd) {
     { name: 'Strikethrough', expected: "~~Strike~~", actual: roundtripMd.includes("~~Strike~~") },
     { name: 'Del HTML tag', expected: "<del>some html</del>", actual: roundtripMd.includes("<del>some html</del>") },
     
-    // Lists - Original vs Roundtrip
-    // Stricter checks for list structures, indentation, and types.
-    { name: 'Ordered List Item 1', expected: "1. Ordered", actual: /^1\\.\\s+Ordered/m.test(roundtripMd) },
-    { name: 'Ordered List - Nested Item 1.1', info: "Checks for '1. Ordered' followed by indented '1. Sub ordered 1'", expected: "1. Ordered\\n   1. Sub ordered 1", actual: /1\.\\s+Ordered\\s*\n\s+1\.\\s+Sub ordered 1/m.test(roundtripMd) },
-    { name: 'Ordered List - Nested Item 1.2', info: "Checks for indented '2. Sub ordered 2' following previous nested item", expected: "   1. Sub ordered 2", actual: /\s+2\.\\s+Sub ordered 2/m.test(roundtripMd) }, // Note: Original is "1. Sub ordered 2", roundtrip might renumber. This check is for structure.
-    { name: 'Ordered List - Item 2 (Another)', expected: "2. Another", actual: /^2\.\\s+Another/m.test(roundtripMd) },
-    { name: 'Ordered List - Mixed Nested Unordered', info: "Checks for '2. Another' followed by indented '* Sub unordered'", expected: "2. Another\\n   * Sub unordered", actual: /2\.\\s+Another\s*\n\s+\*\s+Sub unordered/m.test(roundtripMd) },
-    { name: 'Bullet List Item (Asterisk)', expected: "* Bullet", actual: /^\\*\\s+Bullet/m.test(roundtripMd) },
-    { name: 'Bullet List Item (Hyphen to Asterisk)', info: "Original had '- Also Bullet', expecting '* Also Bullet'", expected: "* Also Bullet", actual: /^\\*\\s+Also Bullet/m.test(roundtripMd) },
-    { name: 'Task List Open', expected: "* [ ] Task Open", actual: /^\\*\\s+\[ \]\s+Task Open/m.test(roundtripMd) }, 
-    { name: 'Task List Done', expected: "* [x] Task Done", actual: /^\\*\\s+\[x\]\s+Task Done/m.test(roundtripMd) },
+    // Lists - Stricter block checks
+    { 
+      name: 'Ordered List Structure', 
+      expected: expectedOrderedListBlock, 
+      actual: createExactBlockRegex(expectedOrderedListBlock).test(roundtripMd),
+      info: "Checks for exact ordered list block, including nesting and mixed types."
+    },
+    { 
+      name: 'Bullet List Structure', 
+      expected: expectedBulletListBlock.replace(/- Also Bullet/g, '* Also Bullet'), // Test expects '-' to be converted to '*'
+      actual: createExactBlockRegex(expectedBulletListBlock.replace(/- Also Bullet/g, '* Also Bullet')).test(roundtripMd),
+      info: "Checks for bullet list block. Note: '-' items are expected to be converted to '*'."
+    },
+    { 
+      name: 'Task List Structure', 
+      expected: expectedTaskListBlock, 
+      actual: createExactBlockRegex(expectedTaskListBlock).test(roundtripMd),
+      info: "Checks for task list block with correct markers."
+    },
 
     // Links
     { name: 'Inline Link', expected: "[Inline](https://example.com)", actual: roundtripMd.includes("[Inline](https://example.com)") },
@@ -68,18 +144,28 @@ function checkForKeyElements(originalMd, roundtripMd) {
     
     // Code
     { name: 'Inline code', expected: "`Inline code`", actual: roundtripMd.includes("`Inline code`") },
-    { name: 'Fenced Code Block with lang ID', expected: "```js\\nconsole.log('Hi');\\n```", actual: roundtripMd.includes("```js\\nconsole.log('Hi');\\n```") },
+    { 
+      name: 'Fenced Code Block with lang ID', 
+      expected: expectedFencedCodeBlock, 
+      actual: createExactBlockRegex(expectedFencedCodeBlock).test(roundtripMd),
+      info: "Checks for the exact fenced code block."
+    },
     
     // Tables
-    // Stricter checks for table structure, including alignment and original spacing.
-    { name: 'Table Header Row', expected: "| Left | Center | Right |", actual: roundtripMd.includes("| Left | Center | Right |") }, // Keep as is, but next one is stricter
-    { name: 'Table Separator Row with Alignment', expected: "| :--- | :----: | ----: |", info: "Checks for original alignment markers.", actual: roundtripMd.includes("| :--- | :----: | ----: |") },
-    { name: 'Table Body Row 1 (Original Spacing)', expected: "| a    |    b   |     c |", info: "Checks for original cell spacing.", actual: roundtripMd.includes("| a    |    b   |     c |") },
-    { name: 'Table Body Row 2 (Original Spacing)', expected: "| d    |    e   |     f |", info: "Checks for original cell spacing.", actual: roundtripMd.includes("| d    |    e   |     f |") },
+    { 
+      name: 'Table Structure', 
+      expected: expectedTableBlock, 
+      actual: createExactBlockRegex(expectedTableBlock).test(roundtripMd),
+      info: "Checks for the exact table structure, including alignment and spacing."
+    },
 
     // Blockquotes
-    { name: 'Blockquote', expected: "> Quote", actual: roundtripMd.includes("> Quote") },
-    { name: 'Nested Blockquote', expected: "> > Nested", actual: roundtripMd.includes("> > Nested") },
+    { 
+      name: 'Blockquote Structure', 
+      expected: expectedBlockquoteBlock, 
+      actual: createExactBlockRegex(expectedBlockquoteBlock).test(roundtripMd),
+      info: "Checks for exact blockquote structure, including nesting."
+    },
     
     // Inline HTML
     { name: 'KBD tag', expected: "<kbd>Ctrl</kbd> + <kbd>C</kbd>", actual: roundtripMd.includes("<kbd>Ctrl</kbd> + <kbd>C</kbd>") }

@@ -67,9 +67,8 @@ Escape \\*asterisks\\*
 
 # Footnotes
 
-Footnote here\[^1\] and inline footnote\[^Quick note\].
+Footnote here[^1] and inline footnote[^Quick note].
 
-\[^1\]: Footnote **supports** markdown.
 
 # Code
 
@@ -94,4 +93,4 @@ console.log('Hi');
 
 # Inline HTML
 
-<kbd>Ctrl</kbd> + <kbd>C</kbd>
+<kbd>Ctrl</kbd> + <kbd>C</kbd>\\n\\n[ref]: https://example.org\\n[logo]: https://picsum.photos/64\\n\\n[^1]: Footnote **supports** markdown.
