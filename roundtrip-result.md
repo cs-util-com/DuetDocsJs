@@ -82,7 +82,7 @@ console.log('Hi');
 # Tables
 
 | Left | Center | Right |
-| --- | --- | --- |
+| --- | :--: | ---:
 | a | b | c |
 | d | e | f |
 
@@ -95,7 +95,3 @@ console.log('Hi');
 # Inline HTML
 
 <kbd>Ctrl</kbd> + <kbd>C</kbd>
-
-[ref]: https://example.org
-
-[logo]: https://picsum.photos/64

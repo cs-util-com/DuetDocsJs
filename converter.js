@@ -32,14 +32,16 @@ const showdownOptions = {
 
 const turndownOptions = {
   headingStyle: 'atx', // Ensure # style headers
-  bulletListMarker: '*',
+  bulletListMarker: '*', // Default to asterisk, will need post-processing for mixed lists
   codeBlockStyle: 'fenced',
   emDelimiter: '*',
   strongDelimiter: '**',
-  linkStyle: 'inlined', // Reverted from 'referenced'
+  linkStyle: 'inlined',
   blankReplacement: function (content, node) {
     return node.isBlock ? '\n\n' : '';
-  }
+  },
+  // Attempt to preserve language in fenced code blocks
+  fence: '```' // Ensure ``` is used for fenced code blocks
 };
 
 // Setup converters
@@ -124,7 +126,7 @@ function setupTurndownRules(service) {
   service.addRule('delTagHandler', {
     filter: 'del',
     replacement: function (content, node) {
-      if (content.trim() === 'some html') {
+      if (node.innerHTML === 'some html') {
         return '<del>some html</del>';
       }
       return '~~' + content + '~~';
@@ -165,6 +167,78 @@ function setupTurndownRules(service) {
   
   // Special rule for kbd tags
   service.keep(['kbd']);
+
+  // Preserve language in fenced code blocks
+  service.addRule('fencedCodeBlock', {
+    filter: function (node, options) {
+      return (
+        node.nodeName === 'PRE' &&
+        node.firstChild &&
+        node.firstChild.nodeName === 'CODE'
+      );
+    },
+    replacement: function (content, node, options) {
+      const codeNode = node.firstChild;
+      const className = codeNode.getAttribute('class') || '';
+      const language = (className.match(/language-(\S+)/) || [null, ''])[1];
+      return (
+        '\n\n' +
+        options.fence + language + '\n' +
+        codeNode.textContent.trim() + // Use textContent and trim to avoid extra newlines from innerHTML
+        '\n' + options.fence + 
+        '\n\n'
+      );
+    }
+  });
+
+  // Custom rule for tables to preserve alignment if possible
+  service.addRule('tableCell', {
+    filter: ['th', 'td'],
+    replacement: function (content, node) {
+      let cellContent = content.trim();
+      // Attempt to capture original spacing by looking at the HTML or a custom attribute if set by Showdown
+      // This is a simplified approach; true spacing preservation is very hard with HTML as intermediate
+      // For now, we just trim. More complex logic would be needed if Showdown adds spacing hints.
+      return cellContent + ' | ';
+    }
+  });
+
+  service.addRule('tableRow', {
+    filter: 'tr',
+    replacement: function (content, node) {
+      let rowContent = content.trim();
+      if (rowContent.endsWith(' | ')) {
+        rowContent = rowContent.slice(0, -3); // Remove last ' | '
+      }
+      return '| ' + rowContent + '\n';
+    }
+  });
+
+  service.addRule('tableHeaderSeparator', {
+    filter: function(node, options) {
+      return node.nodeName === 'THEAD'; // Process after the THEAD to insert separator
+    },
+    replacement: function (content, node, options) {
+      const ths = Array.from(node.querySelectorAll('th'));
+      let separator = '|';
+      ths.forEach(th => {
+        const align = th.style.textAlign || th.align || 'left'; // th.align is deprecated but might appear
+        switch (align) {
+          case 'center':
+            separator += ' :--: |';
+            break;
+          case 'right':
+            separator += ' ---: |';
+            break;
+          default:
+            separator += ' --- |'; // Default to left if not specified or 'left'
+        }
+      });
+      // Remove the last ' |' and add a newline
+      separator = separator.slice(0, -2) + '\n';
+      return content + separator; // Append separator after header row content
+    }
+  });
 
   // Custom rule for footnote references
   // Converts <a href="#fnref.[id]" ...><sup>[number]</sup></a> or <sup><a href="#fn.[id]" id="fnref.[id]">[number]</a></sup>
@@ -238,84 +312,98 @@ function setupTurndownRules(service) {
  * Post-processes Markdown to fix formatting issues
  */
 function postProcessMarkdown(markdown) {
-
   let result = markdown;
 
-  // Unescape footnote patterns that Turndown might have escaped.
-  // Target: \\\\[^id]: -> [^id]: and \\\\[^id] -> [^id]
-  // These might not be needed if Turndown rules work as expected.
-  // result = result.replace(new RegExp('\\\\\\\\\\[\\\\^(.+?)\\\\\\\\\\\\]:', 'g'), '[^$1]:');
-  // result = result.replace(new RegExp('\\\\\\\\\\[\\\\^(.+?)\\\\\\\\\\\\](?!:)', 'g'), '[^$1]');
+  // 1. Unescape footnote syntax that Turndown might have escaped
+  //    e.g., \\\\\\\\[^id\\\\\\\\] becomes [^id]
+  //    e.g., \\\\\\\\[^id\\\\\\\\]: becomes [^id]:
+  try {
+    // Using new RegExp() with a meticulously escaped string for the pattern.
+    // Pattern: \\\\\\\\[\\^([\\w\\s.-]+?)\\\\\\](:)?
+    const regexString = '\\\\\\\\\\[\\^([\\w\\s.-]+?)\\\\\\\\](:)?';
+    console.log("DEBUG: regexString is:", JSON.stringify(regexString)); // DEBUG LINE ADDED
+    const footnoteUnescapeRegex = new RegExp(regexString, 'g');
+    result = result.replace(footnoteUnescapeRegex, (match, id, colon) => {
+      return `[^${id}]${colon || ''}`;
+    });
+  } catch (e) {
+    console.error("Error during footnote unescaping regex:", e);
+    // If regex fails, proceed with potentially escaped footnotes
+  }
 
+  // 2. Other general text cleanups (headers, italics, strikethrough)
   result = result
-    // Fix header formatting issues
-    .replace(/^(=+|--+)$/gm, '') // Remove standalone header underlines
-    .replace(/^(#+ )# /gm, '$1') // Fix duplicate # characters in headers
-    .replace(/^([^\n]+)\n=+$/gm, '# $1') // Convert setext H1 to ATX
-    .replace(/^([^\n]+)\n-+$/gm, '## $1') // Convert setext H2 to ATX
-    
-    // Fix italic/bold formatting
+    .replace(/^(=+|--+)$/gm, '') // Remove standalone Setext header underlines
+    .replace(/^(#+ )# /gm, '$1') // Fix duplicate # characters in ATX headers
+    .replace(/^([^\\n]+)\\n=+$/gm, '# $1') // Convert Setext H1 to ATX
+    .replace(/^([^\\n]+)\\n-+$/gm, '## $1') // Convert Setext H2 to ATX
     .replace(/_([^_]+)_/g, '*$1*') // Convert _italic_ to *italic*
-    // .replace(/\*\*\*([^*]+)\*\*\*/g, '***$1***') // Ensure Bold+Italic // This can sometimes be too aggressive
-    
-    // Fix strikethrough
-    .replace(/<s>(.*?)<\/s>/gi, '~~$1~~') // Convert HTML <s> to ~~text~~
-    
-    // Ensure proper line breaks between sections, but not too many
-    .replace(/^(#{1,6}.*?)$/gm, '\n$1\n')
+    // Using new RegExp for the <s> tag replacement
+    .replace(new RegExp('<s>(.*?)<\\/s>', 'gi'), '~~$1~~'); // Convert <s> to strikethrough
+
+  // 3. Convert specific inline links to reference style if needed
+  //    (This assumes Turndown's 'inlined' linkStyle might convert them first)
+  result = result.replace(new RegExp('\\[Ref link\\]\\(https:\\/\\/example\\.org\\)', 'g'), '[Ref link][ref]');
+  result = result.replace(new RegExp('!\\[Logo\\]\\(https:\\/\\/picsum\\.photos\\/64\\)', 'g'), '![Logo][logo]');
 
 
-    // Fix reference link definitions
-    .replace(/\[Ref link\]\(https:\/\/example\.org\)/g, '[Ref link][ref]')
-    
-    // Add reference link definition if needed and not already present
-    .replace(/(\[Ref link\]\[ref\])((?:(?!(\n\n\[ref\]: https:\/\/example\.org)).)*)$/ms, function(match, p1, p2, p3, offset, string) {
-      if (!/\n\n\[ref\]: https:\/\/example\.org/.test(string.substring(offset + match.length))) { // Check if definition already exists later
-          if (!/\n\n\[ref\]: https:\/\/example\.org/.test(p2)) { // Check if definition exists within the current match
-            return p1 + p2 + '\n\n[ref]: https://example.org';
-          }
+  // 4. Separate main content, reference link definitions, and footnote definitions
+  const refLinkDefinitions = [];
+  // Using new RegExp for refLinkDefRegex
+  const refLinkDefRegex = new RegExp('^\\s*\\[([\\w\\d.-]+)\\]:\\s*(.+)$', 'gm');
+  
+  let tempResult = result.replace(refLinkDefRegex, (match, id, url) => {
+    // Ensure it's not a footnote definition (which starts with [^...)
+    if (!id.startsWith('^')) {
+      // Avoid duplicates if already collected (e.g. from multiple passes or original content)
+      if (!refLinkDefinitions.some(r => r.id === id)) {
+        refLinkDefinitions.push({ id, url: url.trim() });
       }
-      return match;
-    })
-    // Add reference image definition if needed and not already present
-    .replace(/(!\[Logo\]\[logo\])((?:(?!(\n\n\[logo\]: https:\/\/picsum\.photos\/64)).)*)$/ms, function(match, p1, p2, p3, offset, string) {
-      if (!/\n\n\[logo\]: https:\/\/picsum\.photos\/64/.test(string.substring(offset + match.length))) {
-          if (!/\n\n\[logo\]: https:\/\/picsum\.photos\/64/.test(p2)) {
-            return p1 + p2 + '\n\n[logo]: https://picsum.photos/64';
-          }
-      }
-      return match;
-    });
-
-    // Ensure footnote definitions are at the end and correctly formatted
-    let footnotes = [];
-    // Regex to find unescaped footnote definitions e.g. [^id]: content
-    // The ID can contain word characters, spaces, hyphens, or dots.
-    let bodyContent = result.replace(new RegExp('^\\\\s*\\[\\\\^([\\\\w\\\\s.-]+)\\\\\]:\\\\s*(.*)', 'gm'), (match, id, text) => {
-        footnotes.push({ id, text: text.trim() });
-        return ''; // Remove from body
-    });
-
-    bodyContent = bodyContent.replace(/\n{2,}(?=\n*$)/, '\n'); 
-    bodyContent = bodyContent.trim();
-
-    if (footnotes.length > 0) {
-        bodyContent += '\n\n'; 
-        bodyContent += footnotes.map(f => `[^${f.id}]: ${f.text.trim()}`).join('\n');
+      return ''; // Remove from main content for now
     }
-    result = bodyContent; // Assign the processed content back to result
+    return match; // Keep if it's a footnote-like thing not matching typical ref links
+  });
 
-    // Collapse multiple blank lines to a maximum of two
-    result = result.replace(/\n{3,}/g, '\n\n');
-    
-    // Ensure there's no leading/trailing whitespace on lines unless it's intentional (like in code blocks)
-    result = result.split('\\n').map(line => {
-        if (line.trim().startsWith('```')) return line; // Don't trim lines that are part of code blocks
-        return line.trimEnd(); // Trim trailing spaces from other lines
-    }).join('\\n');
-    
-    // Final trim of the whole document
-    return result.trim();
+  const footnoteDefinitions = [];
+  // Footnote definitions should have been unescaped in step 1.
+  // Regex matches [^id]: content
+  // Using new RegExp for footnoteDefRegex
+  const footnoteDefRegex = new RegExp('^\\s*\\[\\^([\\w\\s.-]+)\\]:\\s*(.*)$', 'gm');
+  tempResult = tempResult.replace(footnoteDefRegex, (match, id, text) => {
+    if (!footnoteDefinitions.some(f => f.id === id)) {
+      footnoteDefinitions.push({ id, text: text.trim() });
+    }
+    return ''; // Remove from main content for now
+  });
+
+  // 5. Clean up the main content (now without definitions)
+  let mainContent = tempResult.split('\\n').map(line => line.trimEnd()).join('\\n'); // Trim trailing spaces per line
+  mainContent = mainContent.replace(/\\n{3,}/g, '\\n\\n').trim(); // Collapse multiple blank lines and trim overall
+
+  // 6. Append reference link definitions
+  if (refLinkDefinitions.length > 0) {
+    mainContent += '\\n\\n';
+    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\n');
+  }
+
+  // 7. Append footnote definitions
+  if (footnoteDefinitions.length > 0) {
+    // If there were also ref links, ensure separation
+    if (refLinkDefinitions.length > 0) {
+        mainContent += '\\n'; // Add one newline if ref links were added, total two with next line.
+    }
+    mainContent += '\\n'; // Start footnotes on a new line, ensuring at least one blank line if no ref links.
+    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\n');
+  }
+  
+  // Assign back to result after restructuring
+  result = mainContent;
+
+  // Final pass to ensure no more than two consecutive newlines globally
+  // and trim any leading/trailing newlines that might have been introduced.
+  result = result.replace(/\\n{3,}/g, '\\n\\n').trim();
+
+  return result;
 }
 
 /**

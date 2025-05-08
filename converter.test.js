@@ -41,14 +41,16 @@ function checkForKeyElements(originalMd, roundtripMd) {
     { name: 'Del HTML tag', expected: "<del>some html</del>", actual: roundtripMd.includes("<del>some html</del>") },
     
     // Lists - Original vs Roundtrip
-    // Note: Exact list formatting, especially nested lists, is hard to preserve perfectly.
-    // These checks are more specific than before.
-    { name: 'Ordered List Item 1', expected: "1. Ordered", actual: roundtripMd.match(/^1\.\s+Ordered/m) !== null },
-    { name: 'Ordered List - Nested Item (Original: "   1. Sub ordered 1")', info: "Checks if a common pattern of nested ordered list is somewhat preserved. Original had specific indentation and numbering.", actual: roundtripMd.includes("Sub ordered 1") }, // General check, as exact structure is tricky
-    { name: 'Bullet List Item (Asterisk)', expected: "* Bullet", actual: roundtripMd.match(/^\*\s+Bullet/m) !== null },
-    { name: 'Bullet List Item (Hyphen preserved as Asterisk)', info: "Original had '- Also Bullet', expecting it to become '* Also Bullet' or similar GFM standard.", expected: "* Also Bullet", actual: roundtripMd.match(/^\*\s+Also Bullet/m) !== null },
-    { name: 'Task List Open', expected: "*   [ ]  Task Open", actual: roundtripMd.includes("*   [ ]  Task Open") }, 
-    { name: 'Task List Done', expected: "*   [x]  Task Done", actual: roundtripMd.includes("*   [x]  Task Done") },
+    // Stricter checks for list structures, indentation, and types.
+    { name: 'Ordered List Item 1', expected: "1. Ordered", actual: /^1\\.\\s+Ordered/m.test(roundtripMd) },
+    { name: 'Ordered List - Nested Item 1.1', info: "Checks for '1. Ordered' followed by indented '1. Sub ordered 1'", expected: "1. Ordered\\n   1. Sub ordered 1", actual: /1\.\\s+Ordered\\s*\n\s+1\.\\s+Sub ordered 1/m.test(roundtripMd) },
+    { name: 'Ordered List - Nested Item 1.2', info: "Checks for indented '2. Sub ordered 2' following previous nested item", expected: "   1. Sub ordered 2", actual: /\s+2\.\\s+Sub ordered 2/m.test(roundtripMd) }, // Note: Original is "1. Sub ordered 2", roundtrip might renumber. This check is for structure.
+    { name: 'Ordered List - Item 2 (Another)', expected: "2. Another", actual: /^2\.\\s+Another/m.test(roundtripMd) },
+    { name: 'Ordered List - Mixed Nested Unordered', info: "Checks for '2. Another' followed by indented '* Sub unordered'", expected: "2. Another\\n   * Sub unordered", actual: /2\.\\s+Another\s*\n\s+\*\s+Sub unordered/m.test(roundtripMd) },
+    { name: 'Bullet List Item (Asterisk)', expected: "* Bullet", actual: /^\\*\\s+Bullet/m.test(roundtripMd) },
+    { name: 'Bullet List Item (Hyphen to Asterisk)', info: "Original had '- Also Bullet', expecting '* Also Bullet'", expected: "* Also Bullet", actual: /^\\*\\s+Also Bullet/m.test(roundtripMd) },
+    { name: 'Task List Open', expected: "* [ ] Task Open", actual: /^\\*\\s+\[ \]\s+Task Open/m.test(roundtripMd) }, 
+    { name: 'Task List Done', expected: "* [x] Task Done", actual: /^\\*\\s+\[x\]\s+Task Done/m.test(roundtripMd) },
 
     // Links
     { name: 'Inline Link', expected: "[Inline](https://example.com)", actual: roundtripMd.includes("[Inline](https://example.com)") },
@@ -66,13 +68,14 @@ function checkForKeyElements(originalMd, roundtripMd) {
     
     // Code
     { name: 'Inline code', expected: "`Inline code`", actual: roundtripMd.includes("`Inline code`") },
-    { name: 'Fenced Code Block with lang ID', expected: "```js\nconsole.log('Hi');\n```", actual: roundtripMd.includes("```js\nconsole.log('Hi');\n```") },
+    { name: 'Fenced Code Block with lang ID', expected: "```js\\nconsole.log('Hi');\\n```", actual: roundtripMd.includes("```js\\nconsole.log('Hi');\\n```") },
     
     // Tables
-    // This checks for the presence of GFM table structure. Exact spacing might differ.
-    { name: 'Table Header Row', expected: "| Left | Center | Right |", actual: roundtripMd.includes("| Left | Center | Right |") || roundtripMd.includes("| Left | Center | Right |") },
-    { name: 'Table Separator Row', expected: "| :--- | :----: | ----: |", info: "Original alignment. Turndown might simplify to | --- | --- | --- |", actual: roundtripMd.includes("| --- | --- | --- |") || roundtripMd.includes("| :--- | :----: | ----: |") },
-    { name: 'Table Body Row', expected: "| a    |    b   |     c |", actual: roundtripMd.includes("| a | b | c |") || roundtripMd.includes("| a    |    b   |     c |") }, // Simpler check due to spacing variations
+    // Stricter checks for table structure, including alignment and original spacing.
+    { name: 'Table Header Row', expected: "| Left | Center | Right |", actual: roundtripMd.includes("| Left | Center | Right |") }, // Keep as is, but next one is stricter
+    { name: 'Table Separator Row with Alignment', expected: "| :--- | :----: | ----: |", info: "Checks for original alignment markers.", actual: roundtripMd.includes("| :--- | :----: | ----: |") },
+    { name: 'Table Body Row 1 (Original Spacing)', expected: "| a    |    b   |     c |", info: "Checks for original cell spacing.", actual: roundtripMd.includes("| a    |    b   |     c |") },
+    { name: 'Table Body Row 2 (Original Spacing)', expected: "| d    |    e   |     f |", info: "Checks for original cell spacing.", actual: roundtripMd.includes("| d    |    e   |     f |") },
 
     // Blockquotes
     { name: 'Blockquote', expected: "> Quote", actual: roundtripMd.includes("> Quote") },
@@ -83,13 +86,15 @@ function checkForKeyElements(originalMd, roundtripMd) {
   ];
   
   const results = checks.map(check => {
-    // If 'actual' is already a boolean (from includes), use it directly. Otherwise, evaluate.
-    const pass = typeof check.actual === 'boolean' ? check.actual : check.pattern.test(roundtripMd) === check.expected;
+    // If 'actual' is already a boolean (from includes or test()), use it directly.
+    const pass = typeof check.actual === 'boolean' ? check.actual : false; // Default to false if check.actual wasn't a boolean
     return {
       name: check.name,
       pass: pass,
       expectedValue: check.expected,
-      found: typeof check.actual === 'boolean' ? (check.actual ? "Found" : "Not found") : (check.pattern.test(roundtripMd) ? "Found" : "Not found"),
+      // For regex, 'found' might not be as simple as for 'includes'.
+      // We'll rely on the 'pass' status.
+      found: pass ? "Found as expected" : "Not found or mismatched",
       info: check.info || ""
     };
   });
