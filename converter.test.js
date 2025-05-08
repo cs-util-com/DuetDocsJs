@@ -26,14 +26,11 @@ function checkHtmlListStructure(html) {
   // 1. Ordered
   //    1. Sub ordered 1
   //    2. Sub ordered 2
-  // Simplified regex: Look for the core elements with more permissive matching for content in between.
-  // Using . instead of [\\s\\S] and making it non-greedy with *?
-  // This might still be problematic if newlines are not matched by . in this JS regex engine by default.
-  const orderedNestedOrderedRegex = /<ol>.*?<li>Ordered<\/li>.*?<ol>.*?<li>Sub ordered 1<\/li>.*?<li>Sub ordered 2<\/li>.*?<\/ol>.*?<\/li>.*?<\/ol>/;
+  const orderedNestedOrderedRegex = /<ol>[\s\S]*?<li.*?>Ordered[\s\S]*?<ol>[\s\S]*?<li>Sub ordered 1<\/li>[\s\S]*?<li>Sub ordered 2<\/li>[\s\S]*?<\/ol>[\s\S]*?<\/li>[\s\S]*?<\/ol>/;
   results.push({
     name: 'HTML: Ordered List with Nested Ordered List',
     pass: orderedNestedOrderedRegex.test(html),
-    expectedPattern: "<li>Ordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li>"
+    expectedPattern: "<ol><li>Ordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li></ol>"
   });
 
   // Expected structure for:
@@ -41,18 +38,17 @@ function checkHtmlListStructure(html) {
   //    * Sub unordered
   //        1. Sub ordered 1
   //        2. Sub ordered 2
-  // This implies: <li>Another <ul><li>Sub unordered <ol><li>Sub ordered 1</li>...</ol></li></ul></li>
-  const orderedNestedMixedRegex = /<li>Another<\/li>.*?<ul>.*?<li>Sub unordered<\/li>.*?<ol>.*?<li>Sub ordered 1<\/li>.*?<li>Sub ordered 2<\/li>.*?<\/ol>.*?<\/li>.*?<\/ul>.*?<\/li>/;
+  const orderedNestedMixedRegex = /<ol>[\s\S]*?<li.*?>Another[\s\S]*?<ul>[\s\S]*?<li>Sub unordered[\s\S]*?<ol>[\s\S]*?<li>Sub ordered 1<\/li>[\s\S]*?<li>Sub ordered 2<\/li>[\s\S]*?<\/ol>[\s\S]*?<\/li>[\s\S]*?<\/ul>[\s\S]*?<\/li>[\s\S]*?<\/ol>/;
   results.push({
     name: 'HTML: Ordered List with Nested Unordered and further Nested Ordered List',
     pass: orderedNestedMixedRegex.test(html),
-    expectedPattern: "<li>Another <ul><li>Sub unordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li></ul></li>"
+    expectedPattern: "<ol><li>Another <ul><li>Sub unordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li></ul></li></ol>"
   });
 
   // Expected structure for bullet list (simpler, no deep nesting in example)
   // * Bullet
   // * Bullet
-  const bulletListRegex = /<ul>.*?<li>Bullet<\/li>.*?<li>Bullet<\/li>.*?<\/ul>/;
+  const bulletListRegex = /<ul>[\s\S]*?<li>Bullet<\/li>[\s\S]*?<li>Bullet<\/li>[\s\S]*?<\/ul>/;
   results.push({
     name: 'HTML: Basic Bullet List',
     pass: bulletListRegex.test(html),
@@ -77,12 +73,12 @@ function checkForKeyElements(originalMd, roundtripMd) {
   // Define expected structures from originalMarkdown for stricter checking
   const expectedOrderedListBlock = `\
 1. Ordered   
-   1. Sub ordered 1
-   1. Sub ordered 2   
+    1. Sub ordered 1
+    1. Sub ordered 2   
 2. Another
-   * Sub unordered
-     1. Sub ordered 1
-     1. Sub ordered 2`;
+    * Sub unordered
+        1. Sub ordered 1
+        1. Sub ordered 2`;
 
   const expectedBulletListBlock = `\
 * Bullet
