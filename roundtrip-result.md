@@ -23,27 +23,27 @@
 
 #### Ordered
 
-1.  Ordered
-    1.  Subordered 0
-    2.  Sub ordered 1
-    3.  Sub ordered 2
-        1.  Sub Sub ordered 1
-2.  Another
-    *   Sub unordered
-        1.  Sub ordered 1
-        2.  Sub ordered 2
+1. Ordered
+   1. Subordered 0
+   1. Sub ordered 1
+   1. Sub ordered 2
+         1. Sub Sub ordered 1
+1. Another
+   * Sub unordered
+          1. Sub ordered 1
+          1. Sub ordered 2
 
 #### Bullet
 
-*   Bullet
-*   Bullet
-*   Also Bullet
-*   Also Bullet
+* Bullet
+* Bullet
+* Also Bullet
+* Also Bullet
 
 #### Task List
 
-*   [ ]  Task Open
-*   [x]  Task Done
+* [ ] Task Open
+* [x] Task Done
 
 # Escape
 
@@ -80,9 +80,7 @@ Footnote here[^1] and inline footnote[^Quick note].
 
 `Inline code` and `code blocks`:
 
-```js
-console.log('Hi');
-```
+```\nconsole.log('Hi');\n```
 
 # Tables
 

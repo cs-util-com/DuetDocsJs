@@ -15,7 +15,7 @@ console.log("Step 1: Converting Markdown to HTML...");
 const generatedHtml = markdownToHtml(originalMarkdown);
 
 // Examine HTML output
-console.log("\\nHTML Intermediate Output (first 500 characters):");
+console.log("\nHTML Intermediate Output (first 500 characters):");
 console.log(generatedHtml.substring(0, 500) + "...");
 
 // *** ADDED: Function to check HTML structure for lists ***
@@ -85,7 +85,30 @@ function checkHtmlListStructure(html) {
 
   return results;
 }
-// *** END ADDED CODE ***
+
+// *** NEW: More detailed extraction of HTML list structures ***
+function extractListStructures(html) {
+  // Extract HTML sections for list types to analyze more closely
+  const orderedListSection = extractSection(html, '<h4 id="ordered">Ordered</h4>', '<h4 id="bullet">');
+  const bulletListSection = extractSection(html, '<h4 id="bullet">Bullet</h4>', '<h4 id="task-list">');
+  const taskListSection = extractSection(html, '<h4 id="task-list">Task List</h4>', '<h1 id="escape">');
+  
+  return {
+    orderedListHTML: orderedListSection,
+    bulletListHTML: bulletListSection,
+    taskListHTML: taskListSection,
+  };
+}
+
+function extractSection(html, startMarker, endMarker) {
+  const startIndex = html.indexOf(startMarker);
+  if (startIndex === -1) return 'Section not found';
+  
+  const endIndex = html.indexOf(endMarker, startIndex);
+  if (endIndex === -1) return html.substring(startIndex); // to the end if end marker not found
+  
+  return html.substring(startIndex, endIndex);
+}
 
 // Convert HTML back to Markdown
 console.log("\nStep 2: Converting HTML back to Markdown...");
@@ -95,6 +118,16 @@ const roundtripMarkdown = htmlToMarkdown(generatedHtml);
 fs.writeFileSync('roundtrip-result.md', roundtripMarkdown, 'utf8');
 fs.writeFileSync('html-intermediate.html', generatedHtml, 'utf8');
 console.log("Generated output files: roundtrip-result.md, html-intermediate.html\n");
+
+// *** NEW: Extract and log HTML list structures for debugging ***
+console.log("\nDetailed HTML List Structure Analysis:");
+const listStructures = extractListStructures(generatedHtml);
+console.log("\n=== Ordered List HTML ===");
+console.log(listStructures.orderedListHTML);
+console.log("\n=== Bullet List HTML ===");
+console.log(listStructures.bulletListHTML);
+console.log("\n=== Task List HTML ===");
+console.log(listStructures.taskListHTML);
 
 // Simple check for the presence of key elements in the roundtrip output
 function checkForKeyElements(originalMd, roundtripMd) {
@@ -242,6 +275,65 @@ console.log('Hi');
     { name: 'KBD tag', expected: "<kbd>Ctrl</kbd> + <kbd>C</kbd>", actual: roundtripMd.includes("<kbd>Ctrl</kbd> + <kbd>C</kbd>") }
   ];
   
+  // *** NEW: Additional detailed checks for list conversion ***
+  const actualOrderedListSection = extractListMarkdownSection(roundtripMd, '#### Ordered', '#### Bullet');
+  const actualBulletListSection = extractListMarkdownSection(roundtripMd, '#### Bullet', '#### Task List');
+  const actualTaskListSection = extractListMarkdownSection(roundtripMd, '#### Task List', '# Escape');
+
+  console.log("\n=== Actual Markdown Converted List Sections ===");
+  console.log("Ordered List Section:\n" + actualOrderedListSection);
+  console.log("\nBullet List Section:\n" + actualBulletListSection);
+  console.log("\nTask List Section:\n" + actualTaskListSection);
+
+  // Add specific pattern checks for common list conversion errors
+  checks.push({
+    name: 'No Consecutive Numbers in Ordered Lists',
+    expected: "No consecutive list numbers like '1. item\n2. item'",
+    actual: !/(\d+)\.\s+[^\n]+\n\s*(\d+)\.\s+/.test(actualOrderedListSection), 
+    // If the above regex matches, we have a flattened list with consecutive numbers
+    info: "Checks that ordered lists are not flattened with consecutive numbers."
+  });
+
+  // NEW: More specific test for ordered list numbering
+  checks.push({
+    name: 'Nested Ordered Lists Start with 1',
+    expected: "Each nested ordered list should start with 1",
+    actual: /1\.\s+Ordered[\s\S]*?1\.\s+Subordered/.test(actualOrderedListSection),
+    info: "Checks that nested ordered lists restart numbering with 1."
+  });
+
+  // NEW: Test for preserving ordered list numbering in original format
+  checks.push({
+    name: 'Ordered List Uses Original Markdown Numbering Style',
+    expected: "Use same number as in source markdown (typically all 1's)",
+    actual: !/2\.\s+Subordered/.test(actualOrderedListSection), // Should use 1. not 2.
+    info: "Checks that ordered lists use the same number style as the original markdown."
+  });
+
+  checks.push({
+    name: 'Preserve List Nesting with Proper Indentation',
+    expected: "Indent nested items with spaces, not number sequences",
+    actual: /\s{3,}\d+\.|\s{3,}\*\s/.test(actualOrderedListSection),
+    // The above checks for proper indentation characters before nested items
+    info: "Checks that nested list items are properly indented."
+  });
+
+  checks.push({
+    name: 'Proper Bullet List Markers',
+    expected: "Bullet lists use * or - markers, not numbers",
+    actual: !/\d+\.\s+Bullet/.test(actualBulletListSection),
+    // If the above regex matches, bullets are incorrectly numbered
+    info: "Checks that bullet lists aren't converted to numbered lists."
+  });
+
+  checks.push({
+    name: 'Preserve Task List Checkboxes',
+    expected: "Task lists keep [ ] and [x] syntax",
+    actual: /\*\s+\[\s\]|\*\s+\[x\]/.test(actualTaskListSection),
+    // The above checks for proper checkbox syntax
+    info: "Checks that task list checkboxes are preserved."
+  });
+  
   const results = checks.map(check => {
     // If 'actual' is already a boolean (from includes or test()), use it directly.
     const pass = typeof check.actual === 'boolean' ? check.actual : false; // Default to false if check.actual wasn't a boolean
@@ -259,11 +351,22 @@ console.log('Hi');
   return results;
 }
 
+// Helper to extract markdown sections for lists
+function extractListMarkdownSection(markdown, startMarker, endMarker) {
+  const startIndex = markdown.indexOf(startMarker);
+  if (startIndex === -1) return 'Section not found';
+  
+  const endIndex = markdown.indexOf(endMarker, startIndex);
+  if (endIndex === -1) return markdown.substring(startIndex); // to the end if end marker not found
+  
+  return markdown.substring(startIndex, endIndex);
+}
+
 const checkResults = checkForKeyElements(originalMarkdown, roundtripMarkdown);
 
 // *** ADDED: Run HTML structure checks ***
 const htmlCheckResults = checkHtmlListStructure(generatedHtml);
-console.log("\\nHTML Structure Check Results:");
+console.log("\nHTML Structure Check Results:");
 let htmlChecksPassed = true;
 htmlCheckResults.forEach(result => {
   if (result.pass) {
@@ -276,7 +379,7 @@ htmlCheckResults.forEach(result => {
 // *** END ADDED CODE ***
 
 // Display results
-console.log("\\nKey element preservation check (stricter):");
+console.log("\nKey element preservation check (stricter):");
 let allPassed = true;
 checkResults.forEach(result => {
   if (result.pass) {
@@ -306,10 +409,10 @@ console.log(`- First 50 chars: '${roundtripMarkdown.substring(0, 50).replace(/\n
 
 // Overall result
 if (allPassed && htmlChecksPassed) { // Modified to include htmlChecksPassed
-  console.log("\\n✅ OVERALL RESULT: All key elements were preserved, and HTML structure for lists is correct.");
+  console.log("\n✅ OVERALL RESULT: All key elements were preserved, and HTML structure for lists is correct.");
 } else {
-  console.log("\\n❌ OVERALL RESULT: Some checks failed. Review Markdown preservation or HTML structure.");
+  console.log("\n❌ OVERALL RESULT: Some checks failed. Review Markdown preservation or HTML structure.");
 }
 
-console.log("\\nNote: This test checks for the presence of key markdown elements rather than exact string matching.");
+console.log("\nNote: This test checks for the presence of key markdown elements rather than exact string matching.");
 console.log("The test output files can be inspected for more detailed comparison.");
