@@ -59,7 +59,7 @@ Escape \\*asterisks\\*
 
 #### Ref:
 
-![Logo](https://picsum.photos/64)
+![Logo][logo]
 
 #### Clickable Image with a link:
 
@@ -67,7 +67,7 @@ Escape \\*asterisks\\*
 
 # Footnotes
 
-Footnote here\[^1\] and inline footnote^\[Quick note\].
+Footnote here\[^1\] and inline footnote\[^Quick note\].
 
 \[^1\]: Footnote **supports** markdown.
 
@@ -97,3 +97,5 @@ console.log('Hi');
 <kbd>Ctrl</kbd> + <kbd>C</kbd>
 
 [ref]: https://example.org
+
+[logo]: https://picsum.photos/64

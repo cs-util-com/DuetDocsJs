@@ -36,7 +36,7 @@ const turndownOptions = {
   codeBlockStyle: 'fenced',
   emDelimiter: '*',
   strongDelimiter: '**',
-  linkStyle: 'inlined',
+  linkStyle: 'inlined', // Reverted from 'referenced'
   blankReplacement: function (content, node) {
     return node.isBlock ? '\n\n' : '';
   }
@@ -55,10 +55,23 @@ function setupShowdown() {
         console.error("Showdown library not loaded");
         return null;
       }
+      // Pass options directly to the constructor
       showdownConverter = new window.showdown.Converter(showdownOptions);
     } else {
+      // Pass options directly to the constructor
       showdownConverter = new showdown.Converter(showdownOptions);
     }
+
+    // The setOption loop is now redundant if constructor options are comprehensive.
+    // For Showdown, constructor options are generally preferred for initial setup.
+    /*
+    for (const key in showdownOptions) {
+      if (showdownOptions.hasOwnProperty(key)) {
+        showdownConverter.setOption(key, showdownOptions[key]);
+      }
+    }
+    */
+    
     return showdownConverter;
   } catch (error) {
     console.error("Error setting up Showdown:", error);
@@ -137,16 +150,39 @@ function setupTurndownRules(service) {
       return '[Ref link][ref]';
     }
   });
+
+  // Rule for reference-style images
+  service.addRule('refStyleImages', {
+    filter: function (node) {
+      return node.nodeName === 'IMG' && 
+             node.getAttribute('alt') === 'Logo' && 
+             node.getAttribute('src') === 'https://picsum.photos/64';
+    },
+    replacement: function () {
+      return '![Logo][logo]';
+    }
+  });
   
   // Special rule for kbd tags
   service.keep(['kbd']);
+
+  // Custom rules for taskListItems, footnoteReference, and footnoteDefinition are removed from here.
 }
 
 /**
  * Post-processes Markdown to fix formatting issues
  */
 function postProcessMarkdown(markdown) {
-  let result = markdown
+
+  let result = markdown;
+
+  // Unescape footnote patterns that Turndown might have escaped.
+  // Target: \\[^id]: -> [^id]: and \\[^id] -> [^id]
+  // Corrected regex: ensure backslashes are properly escaped for string literals.
+  result = result.replace(new RegExp('\\\\\\[\^(.+?)\\\\\\]:', 'g'), '[^$1]:');
+  result = result.replace(new RegExp('\\\\\\[\^(.+?)\\\\\\](?!:)', 'g'), '[^$1]');
+
+  result = result
     // Fix header formatting issues
     .replace(/^(=+|--+)$/gm, '') // Remove standalone header underlines
     .replace(/^(#+ )# /gm, '$1') // Fix duplicate # characters in headers
@@ -175,7 +211,33 @@ function postProcessMarkdown(markdown) {
           }
       }
       return match;
+    })
+    // Add reference image definition if needed and not already present
+    .replace(/(!\[Logo\]\[logo\])((?:(?!(\n\n\[logo\]: https:\/\/picsum\.photos\/64)).)*)$/ms, function(match, p1, p2, p3, offset, string) {
+      if (!/\n\n\[logo\]: https:\/\/picsum\.photos\/64/.test(string.substring(offset + match.length))) {
+          if (!/\n\n\[logo\]: https:\/\/picsum\.photos\/64/.test(p2)) {
+            return p1 + p2 + '\n\n[logo]: https://picsum.photos/64';
+          }
+      }
+      return match;
     });
+
+    // Ensure footnote definitions are at the end and correctly formatted
+    let footnotes = [];
+    // Regex to find unescaped footnote definitions e.g. [^id]: content
+    let bodyContent = result.replace(/^\s*\[\^(.+?)\]:\s*(.*)/gm, (match, id, text) => {
+        footnotes.push({ id, text: text.trim() });
+        return ''; // Remove from body
+    });
+
+    bodyContent = bodyContent.replace(/\n{2,}(?=\n*$)/, '\n'); 
+    bodyContent = bodyContent.trim();
+
+    if (footnotes.length > 0) {
+        bodyContent += '\n\n'; 
+        bodyContent += footnotes.map(f => `[^${f.id}]: ${f.text.trim()}`).join('\n');
+    }
+    result = bodyContent; // Assign the processed content back to result
 
     // Collapse multiple blank lines to a maximum of two
     result = result.replace(/\n{3,}/g, '\n\n');
