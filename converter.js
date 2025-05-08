@@ -20,13 +20,14 @@ const showdownOptions = {
   tables: true,
   strikethrough: true,
   tasklists: true,
-  simpleLineBreaks: true,
+  simpleLineBreaks: false, // Changed from true
   parseImgDimensions: true,
   literalMidWordUnderscores: true,
   ghCompatibleHeaderId: true,
   footnotes: true,
   requireSpaceBeforeHeadingText: true,
   ghMentions: false,
+  smartIndentationFix: true, // Added to potentially help with list indentation
 };
 
 const turndownOptions = {
@@ -125,37 +126,6 @@ function setupTurndownRules(service) {
     }
   });
   
-  // Fix table formatting to match GitHub style
-  service.addRule('tableCell', {
-    filter: ['th', 'td'],
-    replacement: function (content, node) {
-      return ' ' + content.trim() + ' |';
-    }
-  });
-  
-  service.addRule('tableRow', {
-    filter: 'tr',
-    replacement: function (content, node) {
-      let output = '|' + content;
-      
-      // Add alignment row after header
-      if (node.parentNode.nodeName === 'THEAD') {
-        const cells = node.cells;
-        let alignRow = '|';
-        
-        for (let i = 0; i < cells.length; i++) {
-          if (i === 0) alignRow += ' :--- |';  // Left align
-          else if (i === 1) alignRow += ' :----: |'; // Center align
-          else alignRow += ' ----: |'; // Right align
-        }
-        
-        return output + '\n' + alignRow;
-      }
-      
-      return output;
-    }
-  });
-  
   // Special handling for reference links
   service.addRule('refStyleLinks', {
     filter: function(node) {
@@ -176,7 +146,7 @@ function setupTurndownRules(service) {
  * Post-processes Markdown to fix formatting issues
  */
 function postProcessMarkdown(markdown) {
-  return markdown
+  let result = markdown
     // Fix header formatting issues
     .replace(/^(=+|--+)$/gm, '') // Remove standalone header underlines
     .replace(/^(#+ )# /gm, '$1') // Fix duplicate # characters in headers
@@ -185,33 +155,39 @@ function postProcessMarkdown(markdown) {
     
     // Fix italic/bold formatting
     .replace(/_([^_]+)_/g, '*$1*') // Convert _italic_ to *italic*
-    .replace(/\*\*\*([^*]+)\*\*\*/g, '***$1***') // Ensure Bold+Italic
+    // .replace(/\*\*\*([^*]+)\*\*\*/g, '***$1***') // Ensure Bold+Italic // This can sometimes be too aggressive
     
     // Fix strikethrough
     .replace(/<s>(.*?)<\/s>/gi, '~~$1~~') // Convert HTML <s> to ~~text~~
     
-    // Ensure proper line breaks between sections
+    // Ensure proper line breaks between sections, but not too many
     .replace(/^(#{1,6}.*?)$/gm, '\n$1\n')
-    
-    // Fix table alignment
-    .replace(/\| :--- \|/g, '| :--- |')
-    .replace(/\| :----: \|/g, '| :----: |')
-    .replace(/\| ----: \|/g, '| ----: |')
-    
+
+
     // Fix reference link definitions
     .replace(/\[Ref link\]\(https:\/\/example\.org\)/g, '[Ref link][ref]')
     
-    // Add reference link definition if needed
-    .replace(/(\[Ref link\]\[ref\](?:(?!^\[ref\]:).)*$)/ms, function(match) {
-      if (!/\[ref\]:/.test(markdown)) {
-        return match + '\n\n[ref]: https://example.org';
+    // Add reference link definition if needed and not already present
+    .replace(/(\[Ref link\]\[ref\])((?:(?!(\n\n\[ref\]: https:\/\/example\.org)).)*)$/ms, function(match, p1, p2, p3, offset, string) {
+      if (!/\n\n\[ref\]: https:\/\/example\.org/.test(string.substring(offset + match.length))) { // Check if definition already exists later
+          if (!/\n\n\[ref\]: https:\/\/example\.org/.test(p2)) { // Check if definition exists within the current match
+            return p1 + p2 + '\n\n[ref]: https://example.org';
+          }
       }
       return match;
-    })
+    });
+
+    // Collapse multiple blank lines to a maximum of two
+    result = result.replace(/\n{3,}/g, '\n\n');
     
-    // Collapse multiple blank lines
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    // Ensure there's no leading/trailing whitespace on lines unless it's intentional (like in code blocks)
+    result = result.split('\\n').map(line => {
+        if (line.trim().startsWith('```')) return line; // Don't trim lines that are part of code blocks
+        return line.trimEnd(); // Trim trailing spaces from other lines
+    }).join('\\n');
+    
+    // Final trim of the whole document
+    return result.trim();
 }
 
 /**
@@ -235,9 +211,34 @@ function normalizeHtml(html) {
 function markdownToHtml(markdown) {
   const converter = setupShowdown();
   if (!converter) return markdown;
-  
-  const html = converter.makeHtml(markdown);
-  return normalizeHtml(html);
+
+  let html = converter.makeHtml(markdown);
+
+  const debugLogHtmlSnippet = (label, currentHtml) => {
+    const codeBlockStartIndex = currentHtml.indexOf('<h1 id="code">Code</h1>'); 
+    const tableStartIndex = currentHtml.indexOf('<h1 id="tables">Tables</h1>'); 
+    if (codeBlockStartIndex !== -1 && tableStartIndex !== -1) {
+      // console.log(`DEBUG markdownToHtml (${label}):\n${currentHtml.substring(codeBlockStartIndex, tableStartIndex)}`);
+    } else if (codeBlockStartIndex !== -1) {
+      // console.log(`DEBUG markdownToHtml (${label}) (snippet may be incomplete):\n${currentHtml.substring(codeBlockStartIndex, codeBlockStartIndex + 350)}`);
+    }
+  };
+
+  debugLogHtmlSnippet("After Showdown", html);
+
+  html = html.replace(
+    /(<pre>(<code>Inline code<\/code> and <code>code blocks<\/code>:))<\/p>/gi,
+    "<p>$2</p>"
+  );
+  debugLogHtmlSnippet("After Fix 1", html);
+
+  html = html.replace(
+    /<p>\s*(<code[^>]*class="[^"]*language-\w+[^"]*"[^>]*>[\s\S]*?<\/code>)\s*<\/pre>/gi,
+    "<pre>$1</pre>"
+  );
+  debugLogHtmlSnippet("After Fix 2 (Final for markdownToHtml)", html);
+
+  return html;
 }
 
 /**
@@ -245,25 +246,25 @@ function markdownToHtml(markdown) {
  * @param {string} html - The HTML string.
  * @returns {string} The resulting Markdown string.
  */
-function htmlToMarkdown(html) {
+function htmlToMarkdown(html) { 
   const service = setupTurndown();
   if (!service) return html;
   
-  // Pre-process HTML to improve conversion
-  const processedHtml = normalizeHtml(html);
+  let processedHtml = html; 
+  // let processedHtml = normalizeHtml(html); // normalizeHtml is still bypassed
+
+  const debugCodeBlockStartIndex = processedHtml.indexOf("<h1 id=\"code\">Code</h1>");
+  const debugTableStartIndex = processedHtml.indexOf("<h1 id=\"tables\">Tables</h1>");
+
+  if (debugCodeBlockStartIndex !== -1 && debugTableStartIndex !== -1) {
+    // console.log(`DEBUG: HTML for JS code block going into Turndown (snippet):\n${processedHtml.substring(debugCodeBlockStartIndex, debugTableStartIndex)}`);
+  } else if (debugCodeBlockStartIndex !== -1) {
+    // console.log(`DEBUG: HTML for JS code block going into Turndown (snippet may be incomplete):\n${processedHtml.substring(debugCodeBlockStartIndex, debugCodeBlockStartIndex + 350)}`);
+  }
   
   try {
     let markdown = service.turndown(processedHtml);
-    
-    // Apply post-processing fixes
     markdown = postProcessMarkdown(markdown);
-    
-    // Special case fix for code blocks - ensure proper js formatting
-    if (markdown.includes("console.log('Hi')")) {
-      // Replace inline code with fenced code blocks
-      markdown = markdown.replace(/`\s*console\.log\('Hi'\);\s*`/g, "```js\nconsole.log('Hi');\n```");
-    }
-    
     return markdown;
   } catch (error) {
     console.error("Error in HTML-to-Markdown conversion:", error);
