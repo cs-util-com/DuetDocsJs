@@ -166,7 +166,72 @@ function setupTurndownRules(service) {
   // Special rule for kbd tags
   service.keep(['kbd']);
 
-  // Custom rules for taskListItems, footnoteReference, and footnoteDefinition are removed from here.
+  // Custom rule for footnote references
+  // Converts <a href="#fnref.[id]" ...><sup>[number]</sup></a> or <sup><a href="#fn.[id]" id="fnref.[id]">[number]</a></sup>
+  service.addRule('footnoteReference', {
+    filter: function (node) {
+      // Showdown's output: <sup><a href="#fn.[id]" id="fnref.[id]">[number]</a></sup>
+      // Sometimes it might be <a...><sup...>, so check both
+      if (node.nodeName === 'SUP') {
+        const firstChild = node.firstChild;
+        return firstChild && firstChild.nodeName === 'A' && firstChild.id && firstChild.id.startsWith('fnref.');
+      }
+      if (node.nodeName === 'A') {
+        const firstChild = node.firstChild;
+        return firstChild && firstChild.nodeName === 'SUP' && node.id && node.id.startsWith('fnref.');
+      }
+      return false;
+    },
+    replacement: function (content, node) {
+      let refNode = node.nodeName === 'A' ? node : node.firstChild;
+      const refId = refNode.id.replace(/^fnref\\./, '');
+      // The content of the <sup> tag is the number, but we want the ID.
+      return '[^' + refId + ']';
+    }
+  });
+
+  // Custom rule for footnote definitions
+  // Converts <li id="fn.[id]" class="footnote-item"><p><a href="#fnref.[id]">↩</a> [content]</p></li>
+  service.addRule('footnoteDefinition', {
+    filter: function (node) {
+      return node.nodeName === 'LI' && node.classList.contains('footnote-item') && node.id && node.id.startsWith('fn.');
+    },
+    replacement: function (content, node) {
+      const id = node.id.replace(/^fn\\./, '');
+      // Content is the innerHTML of the <p> tag, excluding the return link <a>
+      // Turndown will process the <p> tag's content. We need to grab it.
+      // The default behavior of turndown for <p> is to add \\n\\n.
+      // We need to be careful about how content is processed.
+      // Let's try to get the p's content more directly.
+      const pElement = node.querySelector('p');
+      let footnoteContent = '';
+      if (pElement) {
+        // Temporarily remove the return link to prevent it from being part of the content
+        const returnLink = pElement.querySelector('a[href^="#fnref."]');
+        let removedLink = null;
+        if (returnLink) {
+          removedLink = returnLink.parentNode.removeChild(returnLink);
+        }
+        footnoteContent = service.turndown(pElement.innerHTML).trim();
+        // Add the link back if it was removed (though not strictly necessary for output)
+        if (removedLink) {
+          pElement.insertBefore(removedLink, pElement.firstChild);
+        }
+      }
+      return '[^' + id + ']: ' + footnoteContent;
+    }
+  });
+
+  // Rule to remove the <hr class="footnotes-sep"> and <section class="footnotes"><ol class="footnotes-list">...</ol></section>
+  service.addRule('removeFootnoteContainer', {
+    filter: function(node) {
+      return (node.nodeName === 'HR' && node.classList.contains('footnotes-sep')) ||
+             (node.nodeName === 'SECTION' && node.classList.contains('footnotes'));
+    },
+    replacement: function() {
+      return ''; // Remove these elements entirely
+    }
+  });
 }
 
 /**
@@ -177,10 +242,10 @@ function postProcessMarkdown(markdown) {
   let result = markdown;
 
   // Unescape footnote patterns that Turndown might have escaped.
-  // Target: \\[^id]: -> [^id]: and \\[^id] -> [^id]
-  // Corrected regex: ensure backslashes are properly escaped for string literals.
-  result = result.replace(new RegExp('\\\\\\[\^(.+?)\\\\\\]:', 'g'), '[^$1]:');
-  result = result.replace(new RegExp('\\\\\\[\^(.+?)\\\\\\](?!:)', 'g'), '[^$1]');
+  // Target: \\\\[^id]: -> [^id]: and \\\\[^id] -> [^id]
+  // These might not be needed if Turndown rules work as expected.
+  // result = result.replace(new RegExp('\\\\\\\\\\[\\\\^(.+?)\\\\\\\\\\\\]:', 'g'), '[^$1]:');
+  // result = result.replace(new RegExp('\\\\\\\\\\[\\\\^(.+?)\\\\\\\\\\\\](?!:)', 'g'), '[^$1]');
 
   result = result
     // Fix header formatting issues
@@ -225,7 +290,8 @@ function postProcessMarkdown(markdown) {
     // Ensure footnote definitions are at the end and correctly formatted
     let footnotes = [];
     // Regex to find unescaped footnote definitions e.g. [^id]: content
-    let bodyContent = result.replace(/^\s*\[\^(.+?)\]:\s*(.*)/gm, (match, id, text) => {
+    // The ID can contain word characters, spaces, hyphens, or dots.
+    let bodyContent = result.replace(new RegExp('^\\\\s*\\[\\\\^([\\\\w\\\\s.-]+)\\\\\]:\\\\s*(.*)', 'gm'), (match, id, text) => {
         footnotes.push({ id, text: text.trim() });
         return ''; // Remove from body
     });
