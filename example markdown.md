@@ -19,12 +19,12 @@
 #### Ordered
 
 1. Ordered   
-   1. Sub ordered 1
-   1. Sub ordered 2   
+    1. Sub ordered 1
+    1. Sub ordered 2   
 2. Another
-   * Sub unordered
-     1. Sub ordered 1
-     1. Sub ordered 2
+    * Sub unordered
+        1. Sub ordered 1
+        1. Sub ordered 2
 
 #### Bullet
 

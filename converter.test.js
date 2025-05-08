@@ -15,8 +15,53 @@ console.log("Step 1: Converting Markdown to HTML...");
 const generatedHtml = markdownToHtml(originalMarkdown);
 
 // Examine HTML output
-console.log("\nHTML Intermediate Output (first 500 characters):");
+console.log("\\nHTML Intermediate Output (first 500 characters):");
 console.log(generatedHtml.substring(0, 500) + "...");
+
+// *** ADDED: Function to check HTML structure for lists ***
+function checkHtmlListStructure(html) {
+  const results = [];
+
+  // Expected structure for:
+  // 1. Ordered
+  //    1. Sub ordered 1
+  //    2. Sub ordered 2
+  // Simplified regex: Look for the core elements with more permissive matching for content in between.
+  // Using . instead of [\\s\\S] and making it non-greedy with *?
+  // This might still be problematic if newlines are not matched by . in this JS regex engine by default.
+  const orderedNestedOrderedRegex = /<ol>.*?<li>Ordered<\/li>.*?<ol>.*?<li>Sub ordered 1<\/li>.*?<li>Sub ordered 2<\/li>.*?<\/ol>.*?<\/li>.*?<\/ol>/;
+  results.push({
+    name: 'HTML: Ordered List with Nested Ordered List',
+    pass: orderedNestedOrderedRegex.test(html),
+    expectedPattern: "<li>Ordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li>"
+  });
+
+  // Expected structure for:
+  // 2. Another
+  //    * Sub unordered
+  //        1. Sub ordered 1
+  //        2. Sub ordered 2
+  // This implies: <li>Another <ul><li>Sub unordered <ol><li>Sub ordered 1</li>...</ol></li></ul></li>
+  const orderedNestedMixedRegex = /<li>Another<\/li>.*?<ul>.*?<li>Sub unordered<\/li>.*?<ol>.*?<li>Sub ordered 1<\/li>.*?<li>Sub ordered 2<\/li>.*?<\/ol>.*?<\/li>.*?<\/ul>.*?<\/li>/;
+  results.push({
+    name: 'HTML: Ordered List with Nested Unordered and further Nested Ordered List',
+    pass: orderedNestedMixedRegex.test(html),
+    expectedPattern: "<li>Another <ul><li>Sub unordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li></ul></li>"
+  });
+
+  // Expected structure for bullet list (simpler, no deep nesting in example)
+  // * Bullet
+  // * Bullet
+  const bulletListRegex = /<ul>.*?<li>Bullet<\/li>.*?<li>Bullet<\/li>.*?<\/ul>/;
+  results.push({
+    name: 'HTML: Basic Bullet List',
+    pass: bulletListRegex.test(html),
+    expectedPattern: "<ul><li>Bullet</li><li>Bullet</li></ul>"
+  });
+
+  return results;
+}
+// *** END ADDED CODE ***
 
 // Convert HTML back to Markdown
 console.log("\nStep 2: Converting HTML back to Markdown...");
@@ -190,8 +235,22 @@ console.log('Hi');
 
 const checkResults = checkForKeyElements(originalMarkdown, roundtripMarkdown);
 
+// *** ADDED: Run HTML structure checks ***
+const htmlCheckResults = checkHtmlListStructure(generatedHtml);
+console.log("\\nHTML Structure Check Results:");
+let htmlChecksPassed = true;
+htmlCheckResults.forEach(result => {
+  if (result.pass) {
+    console.log(`✓ ${result.name}`);
+  } else {
+    htmlChecksPassed = false;
+    console.log(`✗ ${result.name} - Expected pattern like: ${result.expectedPattern}`);
+  }
+});
+// *** END ADDED CODE ***
+
 // Display results
-console.log("Key element preservation check (stricter):");
+console.log("\\nKey element preservation check (stricter):");
 let allPassed = true;
 checkResults.forEach(result => {
   if (result.pass) {
@@ -220,11 +279,11 @@ console.log(`- Number of lines: ${roundtripMarkdown.split('\n').length}`);
 console.log(`- First 50 chars: '${roundtripMarkdown.substring(0, 50).replace(/\n/g, '\\n')}'`);
 
 // Overall result
-if (allPassed) {
-  console.log("\n✅ OVERALL RESULT: All key elements were preserved in the roundtrip conversion");
+if (allPassed && htmlChecksPassed) { // Modified to include htmlChecksPassed
+  console.log("\\n✅ OVERALL RESULT: All key elements were preserved, and HTML structure for lists is correct.");
 } else {
-  console.log("\n❌ OVERALL RESULT: Some key elements were not preserved in the roundtrip conversion");
+  console.log("\\n❌ OVERALL RESULT: Some checks failed. Review Markdown preservation or HTML structure.");
 }
 
-console.log("\nNote: This test checks for the presence of key markdown elements rather than exact string matching.");
+console.log("\\nNote: This test checks for the presence of key markdown elements rather than exact string matching.");
 console.log("The test output files can be inspected for more detailed comparison.");

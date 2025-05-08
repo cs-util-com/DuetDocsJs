@@ -5,25 +5,23 @@
 <h5 id="header-5">Header 5</h5>
 <h6 id="header-6">Header 6</h6>
 <h1 id="rich-text">Rich Text</h1>
-<p><em>Italic</em> <em>Italic</em> 
-<strong>Bold</strong> <strong>Bold</strong> <strong><em>Bold Italic</em></strong> 
-<strong>Mix of <em>both</strong></em>
-<del>Strike</del> 
-@mention 
+<p><em>Italic</em> <em>Italic</em> <br />
+<strong>Bold</strong> <strong>Bold</strong> <strong><em>Bold Italic</em></strong> <br />
+<strong>Mix of <em>both</strong></em><br />
+<del>Strike</del> <br />
+<a href="https://github.com/mention">@mention</a> <br />
 <del>some html</del></p>
 <h1 id="lists">Lists</h1>
 <h4 id="ordered">Ordered</h4>
 <ol>
-<li>Ordered   </li>
+<li>Ordered   <ol>
 <li>Sub ordered 1</li>
-<li>Sub ordered 2   </li>
-<li>Another</li>
-</ol>
-<ul>
+<li>Sub ordered 2   </li></ol></li>
+<li>Another<ul>
 <li>Sub unordered<ol>
 <li>Sub ordered 1</li>
-<li>Sub ordered 2</li></ol></li>
-</ul>
+<li>Sub ordered 2</li></ol></li></ul></li>
+</ol>
 <h4 id="bullet">Bullet</h4>
 <ul>
 <li>Bullet</li>
@@ -54,15 +52,14 @@
 <p>[^1]: Footnote <strong>supports</strong> markdown.</p>
 <h1 id="code">Code</h1>
 <p><code>Inline code</code> and <code>code blocks</code>:</p>
-<pre><code class="js language-js">console.log('Hi');
-</code></pre>
+<pre><code class="js language-js">console.log('Hi');</code></pre>
 <h1 id="tables">Tables</h1>
 <table>
 <thead>
 <tr>
-<th style="text-align:left;">Left</th>
-<th style="text-align:center;">Center</th>
-<th style="text-align:right;">Right</th>
+<th id="left" style="text-align:left;">Left</th>
+<th id="center" style="text-align:center;">Center</th>
+<th id="right" style="text-align:right;">Right</th>
 </tr>
 </thead>
 <tbody>

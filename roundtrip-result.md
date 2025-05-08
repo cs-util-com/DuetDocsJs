@@ -12,20 +12,24 @@
 
 # Rich Text
 
-*Italic* *Italic* **Bold** **Bold** ***Bold Italic*** **Mix of *both*** ~~Strike~~ @mention <del>some html</del>
+*Italic* *Italic*  
+**Bold** **Bold** ***Bold Italic***  
+**Mix of *both***  
+~~Strike~~  
+[@mention](https://github.com/mention)  
+<del>some html</del>
 
 # Lists
 
 #### Ordered
 
 1.  Ordered
-2.  Sub ordered 1
-3.  Sub ordered 2
-4.  Another
-
-*   Sub unordered
     1.  Sub ordered 1
     2.  Sub ordered 2
+2.  Another
+    *   Sub unordered
+        1.  Sub ordered 1
+        2.  Sub ordered 2
 
 #### Bullet
 

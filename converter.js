@@ -20,14 +20,15 @@ const showdownOptions = {
   tables: true,
   strikethrough: true,
   tasklists: true,
-  simpleLineBreaks: false, // Changed from true
+  simpleLineBreaks: false, 
   parseImgDimensions: true,
   literalMidWordUnderscores: true,
   ghCompatibleHeaderId: true,
   footnotes: true,
   requireSpaceBeforeHeadingText: true,
   ghMentions: false,
-  smartIndentationFix: true, // Added to potentially help with list indentation
+  ghCodeBlocks: true,
+  // extensions: ['github'] // Removed, as this is not the way to set flavor
 };
 
 const turndownOptions = {
@@ -52,17 +53,35 @@ function setupShowdown() {
   if (showdownConverter) return showdownConverter;
   
   try {
+    let ShowdownClass;
     if (isBrowser) {
       if (!window.showdown) {
         console.error("Showdown library not loaded");
         return null;
       }
-      // Pass options directly to the constructor
-      showdownConverter = new window.showdown.Converter(showdownOptions);
+      ShowdownClass = window.showdown;
     } else {
-      // Pass options directly to the constructor
-      showdownConverter = new showdown.Converter(showdownOptions);
+      ShowdownClass = showdown;
     }
+
+    // Define a custom extension for lists (simplified and kept commented)
+    /*
+    const listExtension = {
+      type: 'lang',
+      regex: /^( *)([\*\-\+]|\d+\.) +(.+)/gm,
+      replace: function(match, leadingSpace, marker, content) {
+        // This is a placeholder and needs proper implementation for nesting.
+        // Relying on Showdown's native capabilities first.
+        const itemTag = (marker === '*' || marker === '-' || marker === '+') ? 'ul' : 'ol';
+        return `${leadingSpace}<${itemTag}><li>${content.trim()}</li></${itemTag}>`; 
+      }
+    };
+    ShowdownClass.extension('customListHandler', listExtension);
+    showdownOptions.extensions = ['customListHandler']; // Example of enabling
+    */
+
+    showdownConverter = new ShowdownClass.Converter(showdownOptions);
+    showdownConverter.setFlavor('github'); // Set the flavor to GitHub
 
     // The setOption loop is now redundant if constructor options are comprehensive.
     // For Showdown, constructor options are generally preferred for initial setup.
