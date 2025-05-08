@@ -24,13 +24,15 @@ function checkHtmlListStructure(html) {
 
   // Expected structure for:
   // 1. Ordered
+  //    1. Subordered 0
   //    1. Sub ordered 1
-  //    2. Sub ordered 2
-  const orderedNestedOrderedRegex = /<ol>[\s\S]*?<li.*?>Ordered[\s\S]*?<ol>[\s\S]*?<li>Sub ordered 1<\/li>[\s\S]*?<li>Sub ordered 2<\/li>[\s\S]*?<\/ol>[\s\S]*?<\/li>[\s\S]*?<\/ol>/;
+  //    1. Sub ordered 2
+  //       1. Sub Sub ordered 1
+  const orderedNestedOrderedRegex = /<ol>[\s\S]*?<li.*?>Ordered[\s\S]*?<ol>[\s\S]*?<li>Subordered 0<\/li>[\s\S]*?<li>Sub ordered 1<\/li>[\s\S]*?<li>Sub ordered 2[\s\S]*?<ol>[\s\S]*?<li>Sub Sub ordered 1<\/li>[\s\S]*?<\/ol>[\s\S]*?<\/li>[\s\S]*?<\/ol>[\s\S]*?<\/li>[\s\S]*?<\/ol>/;
   results.push({
     name: 'HTML: Ordered List with Nested Ordered List',
     pass: orderedNestedOrderedRegex.test(html),
-    expectedPattern: "<ol><li>Ordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li></ol>"
+    expectedPattern: "<ol><li>Ordered <ol><li>Subordered 0</li><li>Sub ordered 1</li><li>Sub ordered 2 <ol><li>Sub Sub ordered 1</li></ol></li></ol></li></ol>"
   });
 
   // Expected structure for:
@@ -45,14 +47,40 @@ function checkHtmlListStructure(html) {
     expectedPattern: "<ol><li>Another <ul><li>Sub unordered <ol><li>Sub ordered 1</li><li>Sub ordered 2</li></ol></li></ul></li></ol>"
   });
 
-  // Expected structure for bullet list (simpler, no deep nesting in example)
+  // Expected structure for bullet list
   // * Bullet
   // * Bullet
-  const bulletListRegex = /<ul>[\s\S]*?<li>Bullet<\/li>[\s\S]*?<li>Bullet<\/li>[\s\S]*?<\/ul>/;
+  // - Also Bullet (becomes * Also Bullet)
+  // - Also Bullet (becomes * Also Bullet)
+  const bulletListRegex = /<ul>[\s\S]*?<li>Bullet<\/li>[\s\S]*?<li>Bullet<\/li>[\s\S]*?<li>Also Bullet<\/li>[\s\S]*?<li>Also Bullet<\/li>[\s\S]*?<\/ul>/;
   results.push({
-    name: 'HTML: Basic Bullet List',
+    name: 'HTML: Bullet List Structure',
     pass: bulletListRegex.test(html),
-    expectedPattern: "<ul><li>Bullet</li><li>Bullet</li></ul>"
+    expectedPattern: "<ul><li>Bullet</li><li>Bullet</li><li>Also Bullet</li><li>Also Bullet</li></ul>"
+  });
+
+  // Expected structure for task list
+  // * [ ] Task Open
+  // * [x] Task Done
+  const taskListHtmlRegex = new RegExp(
+    '<ul[^>]*>' +                                                              // Match <ul> with any attributes
+    '[\\s\\S]*?' +                                                             // Match any characters non-greedily (including newlines)
+    '<li[^>]*class="task-list-item"[^>]*>' +                                   // Match <li class="task-list-item" ...>
+    '[\\s\\S]*?' +
+    '<input[^>]*type="checkbox"[^>]*\\bdisabled\\b(?![^>]*\\bchecked\\b)[^>]*>' + // Match <input type="checkbox" ... disabled (and not checked) ...>
+    '[\\s\\S]*?Task Open[\\s\\S]*?<\\/li>' +                                    // Match Task Open text and closing </li>
+    '[\\s\\S]*?' +
+    '<li[^>]*class="task-list-item"[^>]*>' +                                   // Match another <li class="task-list-item" ...>
+    '[\\s\\S]*?' +
+    '<input[^>]*type="checkbox"[^>]*\\bdisabled\\b[^>]*\\bchecked\\b[^>]*>' +   // Match <input type="checkbox" ... disabled ... checked ...>
+    '[\\s\\S]*?Task Done[\\s\\S]*?<\\/li>' +                                     // Match Task Done text and closing </li>
+    '[\\s\\S]*?' +
+    '<\\/ul>'                                                                  // Match closing </ul>
+  );
+  results.push({
+    name: 'HTML: Task List Structure',
+    pass: taskListHtmlRegex.test(html),
+    expectedPattern: "<ul><li...><input type=\"checkbox\" disabled...>Task Open</li><li...><input type=\"checkbox\" disabled checked...>Task Done</li></ul>"
   });
 
   return results;
@@ -71,10 +99,12 @@ console.log("Generated output files: roundtrip-result.md, html-intermediate.html
 // Simple check for the presence of key elements in the roundtrip output
 function checkForKeyElements(originalMd, roundtripMd) {
   // Define expected structures from originalMarkdown for stricter checking
-  const expectedOrderedListBlock = `\
+  const expectedOrderedListBlock = `\\
 1. Ordered   
-    1. Sub ordered 1
-    1. Sub ordered 2   
+   1. Subordered 0
+   1. Sub ordered 1
+   1. Sub ordered 2
+      1. Sub Sub ordered 1
 2. Another
     * Sub unordered
         1. Sub ordered 1

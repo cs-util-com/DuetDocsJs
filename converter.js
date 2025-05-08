@@ -140,6 +140,24 @@ function setupTurndown() {
 
 function setupTurndownRules(service) {
   if (!service) return;
+
+  // DEBUG: Force UL > LI to use asterisk
+  service.addRule('debugMyLi', {
+    filter: function(node) {
+      return node.nodeName === 'LI' && node.parentNode && node.parentNode.nodeName === 'UL';
+    },
+    replacement: function(content, node, options) {
+      // console.log('MY UL>LI RULE:', node.textContent.substring(0,20), 'Parent:', node.parentNode.nodeName);
+      content = content.replace(/^\\n+/, '').replace(/\\n+$/, '\\n').replace(/\\n/gm, '\\n  ');
+      // For task list items, the GFM plugin should have already processed the input to [ ] or [x]
+      // This rule needs to be careful not to break that.
+      // If content already starts with [ ] or [x] due to GFM input rule, preserve it.
+      if (content.startsWith('[ ] ') || content.startsWith('[x] ')) {
+         return '* ' + content.trim() + (node.nextSibling && !/\\n$/.test(content) ? '\\n' : '');
+      }
+      return '* ' + content.trimStart() + (node.nextSibling && !/\\n$/.test(content) ? '\\n' : '');
+    }
+  });
   
   // Ensure del tags are preserved when content is "some html"
   service.addRule('delTagHandler', {
@@ -199,10 +217,10 @@ function setupTurndownRules(service) {
     replacement: function (content, node, options) {
       const codeNode = node.firstChild;
       const className = codeNode.getAttribute('class') || '';
-      const language = (className.match(/language-(\S+)/) || [null, ''])[1];
-      // Simplified replacement: let Turndown and postProcessMarkdown handle surrounding newlines.
-      return options.fence + language + '\n' +
-             codeNode.textContent.trim() + '\n' + options.fence;
+      const language = (className.match(/language-(\\S+)/) || [null, ''])[1];
+      // Use 'content' which is Turndown's processed version of the code tag's content.
+      return options.fence + language + '\\n' +
+             content.trim() + '\\n' + options.fence;
     }
   });
 
