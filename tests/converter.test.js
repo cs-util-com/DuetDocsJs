@@ -3,51 +3,46 @@ const path = require('path');
 const { markdownToHtml, htmlToMarkdown } = require('../converter'); // Adjusted path
 
 // Output directories
-const htmlOutputDir = path.join(__dirname, 'output/html');
-const mdOutputDir = path.join(__dirname, 'output/md');
+const htmlOutputDir = path.join(__dirname, 'output/html'); // For MD -> HTML
+const mdOutputDir = path.join(__dirname, 'output/md');     // For MD -> HTML -> MD
+
+// New output directories for HTML -> MD -> HTML tests
+const mdFromHtmlOutputDir = path.join(__dirname, 'output/md_from_html');             // For HTML -> MD
+const htmlFromMdFromHtmlOutputDir = path.join(__dirname, 'output/html_from_md_from_html'); // For HTML -> MD -> HTML
 
 // Ensure output directories exist
-if (!fs.existsSync(htmlOutputDir)) {
-  fs.mkdirSync(htmlOutputDir, { recursive: true });
-}
-if (!fs.existsSync(mdOutputDir)) {
-  fs.mkdirSync(mdOutputDir, { recursive: true });
-}
+[htmlOutputDir, mdOutputDir, mdFromHtmlOutputDir, htmlFromMdFromHtmlOutputDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
-// Read the example markdown file
-const exampleMdPath = path.join(__dirname, '../example markdown.md'); // Adjusted path
+// Read the example markdown file (still used for context, but not directly in HTML tests)
+const exampleMdPath = path.join(__dirname, './example markdown.md'); // Adjusted path to be relative to __dirname
 const originalMarkdown = fs.readFileSync(exampleMdPath, 'utf8');
 
-console.log("\n=== INDIVIDUAL MARKDOWN FEATURE CONVERSION TESTS ===");
+console.log("\n=== INDIVIDUAL MARKDOWN FEATURE CONVERSION TESTS & HTML CONSISTENCY CHECKS ===");
 
-// Helper function to run a single feature test
+// Helper function to run a single feature test (MD -> HTML -> MD)
 function testFeature(featureName, markdownSnippet) {
-  console.log(`\n--- Testing: ${featureName} ---`);
+  console.log(`\n--- Testing MD->HTML->MD: ${featureName} ---`);
 
   // Convert Markdown to HTML
-  console.log("Step 1: Converting Markdown to HTML...");
-  const generatedHtml = markdownToHtml(markdownSnippet);
+  console.log("Step 1 (MD->HTML): Converting Markdown to HTML...");
+  const generatedHtml = markdownToHtml(markdownSnippet); // This is the HTML we'll use for the consistency check later
   const htmlOutputPath = path.join(htmlOutputDir, `${featureName}.html`);
   fs.writeFileSync(htmlOutputPath, generatedHtml, 'utf8');
-  console.log(`HTML output saved to: ${htmlOutputPath}`);
-  // console.log("HTML (first 200 chars):", generatedHtml.substring(0, 200) + "...");
-
+  console.log(`MD->HTML output saved to: ${htmlOutputPath}`);
 
   // Convert HTML back to Markdown
-  console.log("\nStep 2: Converting HTML back to Markdown...");
+  console.log("\nStep 2 (HTML->MD): Converting HTML back to Markdown...");
   const roundtripMarkdown = htmlToMarkdown(generatedHtml);
   const mdOutputPath = path.join(mdOutputDir, `${featureName}.md`);
   fs.writeFileSync(mdOutputPath, roundtripMarkdown, 'utf8');
-  console.log(`Markdown output saved to: ${mdOutputPath}`);
-  // console.log("Roundtrip MD (first 200 chars):", roundtripMarkdown.substring(0, 200) + "...");
+  console.log(`MD->HTML->MD output saved to: ${mdOutputPath}`);
 
-  // Basic check: Does the roundtrip Markdown resemble the original snippet?
-  // This is a very basic check. More specific checks will be added per feature.
-  // For now, we'll just check if it's not empty and contains some key characters from the original.
   let pass = roundtripMarkdown.length > 0;
   if (pass && markdownSnippet.length > 0) {
-    // A more robust check would involve comparing ASTs or normalized versions.
-    // For now, let's check for a few characters from the original.
     const checkChars = markdownSnippet.replace(/\s/g, '').substring(0, 10);
     let matchCount = 0;
     for (let char of checkChars) {
@@ -55,22 +50,35 @@ function testFeature(featureName, markdownSnippet) {
             matchCount++;
         }
     }
-    pass = matchCount > checkChars.length / 2; // Heuristic
+    pass = matchCount > checkChars.length / 2;
   }
-
 
   if (pass) {
-    console.log(`✓ Test basic preservation for ${featureName}`);
+    console.log(`✓ Test MD->HTML->MD basic preservation for ${featureName}`);
   } else {
-    console.log(`✗ Test basic preservation for ${featureName} - FAILED`);
-    console.log("Original Snippet:\n", markdownSnippet);
-    console.log("Roundtrip Markdown:\n", roundtripMarkdown);
+    console.log(`✗ Test MD->HTML->MD basic preservation for ${featureName} - FAILED`);
+    console.log("Original Snippet (MD):\n", markdownSnippet);
+    console.log("Roundtrip Markdown (MD->HTML->MD):\n", roundtripMarkdown);
   }
-  return pass;
+  return { pass, generatedHtml }; // Return pass status and the intermediate HTML
 }
 
-// --- Define Markdown Snippets for Individual Tests ---
+// Helper function to normalize HTML for comparison (basic text content focus)
+const normalizeHtmlForCompare = (htmlStr) => {
+  if (typeof htmlStr !== 'string') return '';
+  return htmlStr
+    .replace(/<!--[\s\S]*?-->/g, '') // Remove comments
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove script tags
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   // Remove style tags
+    .replace(/<[^>]+>/g, ' ')         // Replace all tags with a single space
+    .replace(/\s+/g, ' ')            // Collapse multiple whitespaces
+    .replace(/&nbsp;/gi, ' ')        // Treat non-breaking spaces as normal spaces
+    .toLowerCase()                   // Consistent casing for text content
+    .trim();
+};
 
+
+// --- Define Markdown Snippets for Individual Tests ---
 const testsToRun = [
   {
     name: "Headers",
@@ -188,29 +196,85 @@ const testsToRun = [
 ];
 
 // --- Run all tests ---
-let allTestsPassed = true;
+let allMdRoundtripTestsPassed = true;
+let allHtmlConsistencyTestsPassed = true;
 let individualResults = [];
 
 testsToRun.forEach(testCase => {
-  const result = testFeature(testCase.name, testCase.markdown);
-  individualResults.push({ name: testCase.name, passed: result });
-  if (!result) {
-    allTestsPassed = false;
+  // 1. Run MD -> HTML -> MD test
+  const mdTestResult = testFeature(testCase.name, testCase.markdown);
+  individualResults.push({ name: `${testCase.name}_MdRoundtrip`, passed: mdTestResult.pass });
+  if (!mdTestResult.pass) {
+    allMdRoundtripTestsPassed = false;
   }
+
+  // 2. Run HTML -> MD -> HTML consistency test
+  //    using the HTML generated from the first step of the MD->HTML->MD test
+  console.log(`\n--- Testing HTML->MD->HTML Consistency for: ${testCase.name} ---`);
+  const initialHtmlForConsistency = mdTestResult.generatedHtml; // HTML from (MD -> HTML)
+
+  // Step 2.1: Convert this initial HTML to Markdown
+  console.log("Step 2.1 (HTML->MD): Converting initial HTML to Markdown...");
+  const mdFromInitialHtml = htmlToMarkdown(initialHtmlForConsistency);
+  const mdFromHtmlOutPath = path.join(mdFromHtmlOutputDir, `${testCase.name}_from_initial_html.md`);
+  fs.writeFileSync(mdFromHtmlOutPath, mdFromInitialHtml, 'utf8');
+  console.log(`HTML->MD output saved to: ${mdFromHtmlOutPath}`);
+
+  // Step 2.2: Convert that Markdown back to HTML
+  console.log("\nStep 2.2 (MD->HTML): Converting Markdown (from HTML) back to HTML...");
+  const finalHtmlForConsistency = markdownToHtml(mdFromInitialHtml);
+  const htmlFromMdFromHtmlOutPath = path.join(htmlFromMdFromHtmlOutputDir, `${testCase.name}_final_html.html`);
+  fs.writeFileSync(htmlFromMdFromHtmlOutPath, finalHtmlForConsistency, 'utf8');
+  console.log(`HTML->MD->HTML output saved to: ${htmlFromMdFromHtmlOutPath}`);
+
+  // Compare initialHtmlForConsistency with finalHtmlForConsistency
+  const normalizedInitialHtml = normalizeHtmlForCompare(initialHtmlForConsistency);
+  const normalizedFinalHtml = normalizeHtmlForCompare(finalHtmlForConsistency);
+
+  let htmlConsistencyPass = normalizedInitialHtml === normalizedFinalHtml;
+
+  // If they are not identical, but both are effectively empty after normalization, consider it a pass.
+  if (!htmlConsistencyPass && normalizedInitialHtml === "" && normalizedFinalHtml === "") {
+      htmlConsistencyPass = true;
+  }
+  
+  if (htmlConsistencyPass) {
+    console.log(`✓ Test HTML->MD->HTML Consistency for ${testCase.name}`);
+  } else {
+    allHtmlConsistencyTestsPassed = false;
+    console.log(`✗ Test HTML->MD->HTML Consistency for ${testCase.name} - FAILED`);
+    console.log(`  Initial HTML (MD->HTML) was saved to: tests/output/html/${testCase.name}.html`);
+    console.log(`  Final HTML (MD->HTML->MD->HTML) was saved to: ${htmlFromMdFromHtmlOutPath}`);
+    // For debugging, log the normalized versions if they differ and are not too long
+    if (normalizedInitialHtml.length < 500 && normalizedFinalHtml.length < 500) {
+        console.log("  Normalized Initial HTML (MD->HTML):\n", normalizedInitialHtml);
+        console.log("  Normalized Final HTML (MD->HTML->MD->HTML):\n", normalizedFinalHtml);
+    } else {
+        console.log("  (Normalized HTMLs are too long to display here, check the saved files.)")
+    }
+  }
+  individualResults.push({ name: `${testCase.name}_HtmlConsistency`, passed: htmlConsistencyPass });
 });
 
-console.log("\n=== OVERALL TEST SUMMARY ===");
+console.log("\n\n=== OVERALL TEST SUMMARY ===");
 individualResults.forEach(res => {
     console.log(`${res.passed ? '✓' : '✗' } ${res.name}`);
 });
 
-if (allTestsPassed) {
-  console.log("\n✅ ALL INDIVIDUAL TESTS PASSED (basic preservation check).");
+if (allMdRoundtripTestsPassed) {
+  console.log("\n✅ ALL MD->HTML->MD TESTS PASSED (basic preservation check).");
 } else {
-  console.log("\n❌ SOME INDIVIDUAL TESTS FAILED (basic preservation check). Review logs and output files.");
+  console.log("\n❌ SOME MD->HTML->MD TESTS FAILED (basic preservation check). Review logs and output files.");
 }
 
-console.log("\nNote: These tests primarily check for basic roundtrip conversion and output file generation.");
+if (allHtmlConsistencyTestsPassed) {
+  console.log("\n✅ ALL HTML->MD->HTML CONSISTENCY TESTS PASSED.");
+} else {
+  console.log("\n❌ SOME HTML->MD->HTML CONSISTENCY TESTS FAILED. Review logs and output files.");
+}
+
+console.log("\nNote: MD roundtrip tests primarily check for basic roundtrip conversion and output file generation.");
+console.log("Note: HTML consistency tests check if (MD -> HTML) is consistent with (MD -> HTML -> MD -> HTML).");
 console.log("Further validation should involve inspecting the .html and .md files in tests/output/");
 console.log("and potentially adding more specific assertion logic for each feature.");
 
@@ -281,10 +345,10 @@ function runDetailedChecks() {
             // Turndown might convert "1. item" "2. item" to "1. item" "1. item" if that's its default,
             // or preserve numbering. This needs to be based on expected Turndown behavior.
             // Assuming it normalizes to "1." for all items at the same level:
-            { name: "Top level ordered list item 1", expected: /1\.\\s+Ordered/ },
-            { name: "Nested ordered list item A (indented, starts with 1)", expected: /\\s+1\.\\s+Subordered A/ },
-            { name: "Nested ordered list item B (indented, starts with 1)", expected: /\\s+1\.\\s+Subordered B/ },
-            { name: "Second top level item", expected: /1\.\\s+Another top item/ } // Or 2. depending on Turndown
+            { name: "Top level ordered list item 1", expected: /1\.\s+Ordered/ },
+            { name: "Nested ordered list item A (indented, starts with 1)", expected: /\s+1\.\s+Subordered A/ },
+            { name: "Nested ordered list item B (indented, starts with 1)", expected: /\s+1\.\s+Subordered B/ },
+            { name: "Second top level item", expected: /1\.\s+Another top item/ } // Or 2. depending on Turndown
         ];
         // Adjust regexes based on actual expected output from your htmlToMarkdown function
         // For example, if Turndown renumbers "1. Item" "2. Item" to "1. Item" "1. Item", the regexes need to reflect that.
@@ -311,8 +375,8 @@ function runDetailedChecks() {
         checkHtmlStructure(htmlContent, "TaskList", taskListHtmlChecks);
 
         const taskListMdChecks = [
-            { name: "Unchecked task item Markdown", expected: /\\*\\s+\\[ \\]\\s+Open Task/ },
-            { name: "Checked task item Markdown", expected: /\\*\\s+\\[x\\]\\s+Completed Task/i } // Case-insensitive for 'x'
+            { name: "Unchecked task item Markdown", expected: /\*\s+\[ \]\s+Open Task/ },
+            { name: "Checked task item Markdown", expected: /\*\s+\[x\]\s+Completed Task/i } // Case-insensitive for 'x'
         ];
         checkMarkdownStructure(mdContent, "TaskList", taskListMdChecks);
 
