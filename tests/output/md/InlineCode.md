@@ -1,0 +1,1 @@
+Use `const example = true;` for inline code.

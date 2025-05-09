@@ -541,19 +541,6 @@ function postProcessMarkdown(markdown) {
 }
 
 /**
- * Normalizes HTML to improve consistency
- */
-function normalizeHtml(html) {
-  if (typeof html !== 'string') return '';
-  
-  return html
-    // Add line breaks for block elements
-    .replace(/<\/(h[1-6]|p|div|li|blockquote|pre|tr)>/gi, '</$1>\n')
-    .replace(/<(h[1-6]|p|div|ul|ol|li|blockquote|pre|table|tr)[^>]*>/gi, '\n<$1>')
-    .replace(/<br[^>]*>/gi, '\n');
-}
-
-/**
  * Converts Markdown text to HTML.
  * @param {string} markdown - The Markdown string.
  * @returns {string} The resulting HTML string.
@@ -567,11 +554,11 @@ function markdownToHtml(markdown) {
   const debugLogHtmlSnippet = (label, currentHtml) => {
     const codeBlockStartIndex = currentHtml.indexOf('<h1 id="code">Code</h1>'); 
     const tableStartIndex = currentHtml.indexOf('<h1 id="tables">Tables</h1>'); 
-    if (codeBlockStartIndex !== -1 && tableStartIndex !== -1) {
-      // console.log(`DEBUG markdownToHtml (${label}):\n${currentHtml.substring(codeBlockStartIndex, tableStartIndex)}`);
-    } else if (codeBlockStartIndex !== -1) {
-      // console.log(`DEBUG markdownToHtml (${label}) (snippet may be incomplete):\n${currentHtml.substring(codeBlockStartIndex, codeBlockStartIndex + 350)}`);
-    }
+    // if (codeBlockStartIndex !== -1 && tableStartIndex !== -1) {
+    //   // console.log(`DEBUG markdownToHtml (${label}):\n${currentHtml.substring(codeBlockStartIndex, tableStartIndex)}`);
+    // } else if (codeBlockStartIndex !== -1) {
+    //   // console.log(`DEBUG markdownToHtml (${label}) (snippet may be incomplete):\n${currentHtml.substring(codeBlockStartIndex, codeBlockStartIndex + 350)}`);
+    // }
   };
 
   debugLogHtmlSnippet("After Showdown", html);
@@ -586,7 +573,7 @@ function markdownToHtml(markdown) {
     /<p>\s*(<code[^>]*class="[^"]*language-\w+[^"]*"[^>]*>[\s\S]*?<\/code>)\s*<\/pre>/gi,
     "<pre>$1</pre>"
   );
-  debugLogHtmlSnippet("After Fix 2 (Final for markdownToHtml)", html);
+  // debugLogHtmlSnippet("After Fix 2 (Final for markdownToHtml)", html); // Removed this specific log
 
   return html;
 }
@@ -603,14 +590,14 @@ function htmlToMarkdown(html) {
   let processedHtml = html; 
   // let processedHtml = normalizeHtml(html); // normalizeHtml is still bypassed
 
-  const debugCodeBlockStartIndex = processedHtml.indexOf("<h1 id=\"code\">Code</h1>");
-  const debugTableStartIndex = processedHtml.indexOf("<h1 id=\"tables\">Tables</h1>");
+  // const debugCodeBlockStartIndex = processedHtml.indexOf("<h1 id=\"code\">Code</h1>");
+  // const debugTableStartIndex = processedHtml.indexOf("<h1 id=\"tables\">Tables</h1>");
 
-  if (debugCodeBlockStartIndex !== -1 && debugTableStartIndex !== -1) {
-    // console.log(`DEBUG: HTML for JS code block going into Turndown (snippet):\n${processedHtml.substring(debugCodeBlockStartIndex, debugTableStartIndex)}`);
-  } else if (debugCodeBlockStartIndex !== -1) {
-    // console.log(`DEBUG: HTML for JS code block going into Turndown (snippet may be incomplete):\n${processedHtml.substring(debugCodeBlockStartIndex, debugCodeBlockStartIndex + 350)}`);
-  }
+  // if (debugCodeBlockStartIndex !== -1 && debugTableStartIndex !== -1) {
+  //   // console.log(`DEBUG: HTML for JS code block going into Turndown (snippet):\n${processedHtml.substring(debugCodeBlockStartIndex, debugTableStartIndex)}`);
+  // } else if (debugCodeBlockStartIndex !== -1) {
+  //   // console.log(`DEBUG: HTML for JS code block going into Turndown (snippet may be incomplete):\n${processedHtml.substring(debugCodeBlockStartIndex, debugCodeBlockStartIndex + 350)}`);
+  // }
   
   try {
     let markdown = service.turndown(processedHtml);

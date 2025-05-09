@@ -1,0 +1,2 @@
+*Italic Text*  
+*Also Italic*
