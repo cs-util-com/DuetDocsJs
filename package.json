@@ -4,7 +4,7 @@
   "description": "A simple, single-file web application that provides a side-by-side Markdown and Rich-Text (HTML) editor with live two-way synchronization. Edit in one pane, and see the changes instantly reflected in the other. Built with vanilla JavaScript and modern libraries delivered via CDN.",
   "main": "converter.js",
   "scripts": {
-    "test": "node converter.test.js"
+    "test": "node tests/converter.test.js"
   },
   "keywords": [],
   "author": "",

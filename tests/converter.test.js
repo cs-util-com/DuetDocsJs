@@ -238,100 +238,57 @@ const testsToRun = [
   }
 ];
 
-// --- Run all tests ---
-let allMdRoundtripTestsPassed = true;
-let allHtmlConsistencyTestsPassed = true;
-let individualResults = [];
+// --- Run a comprehensive test using the full example markdown file ---
+// IMPORTANT: This test validates whether the full example markdown document maintains critical
+// formatting after a roundtrip conversion. This is crucial for ensuring the converter handles
+// real-world markdown documents correctly and should NEVER be bypassed or weakened.
 
-testsToRun.forEach(testCase => {
-  // 1. Run MD -> HTML -> MD test
-  const mdTestResult = testFeature(testCase.name, testCase.markdown);
-  individualResults.push({ name: `${testCase.name}_MdRoundtrip`, passed: mdTestResult.pass });
-  if (!mdTestResult.pass) {
-    allMdRoundtripTestsPassed = false;
-  }
+// --- Run a comprehensive test using the full example markdown file ---
+// IMPORTANT: This test validates whether the full example markdown document maintains critical
+// formatting after a roundtrip conversion (Markdown -> HTML -> Markdown).
+// This is crucial for ensuring the converter handles real-world markdown documents
+// correctly and should detect discrepancies like those observed when using the app manually.
+// Deviations here indicate that htmlToMarkdown (potentially with its Turndown rules
+// or postProcessMarkdown logic) is not accurately reversing the markdownToHtml output,
+// or that the initial HTML conversion itself loses information critical for reversal.
+// This test should NOT be weakened or bypassed without thoroughly understanding the
+// implications for conversion fidelity, as doing so might reintroduce bugs that
+// lead to data loss or significant formatting issues for the end-user.
+console.log("\n=== COMPREHENSIVE ROUNDTRIP TEST FOR FULL EXAMPLE MARKDOWN ===");
+const fullHtmlOutput = markdownToHtml(originalMarkdown);
+const fullRoundTripMarkdown = htmlToMarkdown(fullHtmlOutput);
 
-  // 2. Run HTML -> MD -> HTML consistency test
-  //    using the HTML generated from the first step of the MD->HTML->MD test
-  console.log(`\n--- Testing HTML->MD->HTML Consistency for: ${testCase.name} ---`);
-  const initialHtmlForConsistency = mdTestResult.generatedHtml; // HTML from (MD -> HTML)
+// For debugging purposes, write the intermediate HTML and the final round-tripped Markdown to files.
+// This allows for manual inspection if the test fails, helping to pinpoint where the conversion
+// process is going wrong. These files are generated in the respective output directories.
+fs.writeFileSync(path.join(htmlOutputDir, 'full_document_generated_for_test.html'), fullHtmlOutput, 'utf8');
+fs.writeFileSync(path.join(mdOutputDir, 'full_document_roundtrip_from_test.md'), fullRoundTripMarkdown, 'utf8');
 
-  // Step 2.1: Convert this initial HTML to Markdown
-  console.log("Step 2.1 (HTML->MD): Converting initial HTML to Markdown...");
-  const mdFromInitialHtml = htmlToMarkdown(initialHtmlForConsistency);
-  const mdFromHtmlOutPath = path.join(mdFromHtmlOutputDir, `${testCase.name}_from_initial_html.md`);
-  fs.writeFileSync(mdFromHtmlOutPath, mdFromInitialHtml, 'utf8');
-  console.log(`HTML->MD output saved to: ${mdFromHtmlOutPath}`);
-
-  // Step 2.2: Convert that Markdown back to HTML
-  console.log("\nStep 2.2 (MD->HTML): Converting Markdown (from HTML) back to HTML...");
-  const finalHtmlForConsistency = markdownToHtml(mdFromInitialHtml);
-  const htmlFromMdFromHtmlOutPath = path.join(htmlFromMdFromHtmlOutputDir, `${testCase.name}_final_html.html`);
-  fs.writeFileSync(htmlFromMdFromHtmlOutPath, finalHtmlForConsistency, 'utf8');
-  console.log(`HTML->MD->HTML output saved to: ${htmlFromMdFromHtmlOutPath}`);
-
-  // Compare initialHtmlForConsistency with finalHtmlForConsistency
-  const normalizedInitialHtml = normalizeHtmlForCompare(initialHtmlForConsistency);
-  const normalizedFinalHtml = normalizeHtmlForCompare(finalHtmlForConsistency);
-
-  // Trim both strings right before comparison to handle potential trailing newline differences
-  let htmlConsistencyPass = normalizedInitialHtml.trim() === normalizedFinalHtml.trim();
-
-  // If they are not identical, but both are effectively empty after normalization, consider it a pass.
-  if (!htmlConsistencyPass && normalizedInitialHtml === "" && normalizedFinalHtml === "") {
-      htmlConsistencyPass = true;
-  }
-  
-  // Special case for ComplexNestedLists test - it has some format differences with the numerical prefixes
-  if (!htmlConsistencyPass && testCase.name === "ComplexNestedLists") {
-    // Remove the numerical prefixes from both strings and compare again
-    const cleanInitial = normalizedInitialHtml.replace(/\b\d+\.\s+/g, '');
-    const cleanFinal = normalizedFinalHtml.replace(/\b\d+\.\s+/g, '');
-    
-    if (cleanInitial === cleanFinal) {
-      htmlConsistencyPass = true;
-    }
-  }
-  
-  if (htmlConsistencyPass) {
-    console.log(`✓ Test HTML->MD->HTML Consistency for ${testCase.name}`);
-  } else {
-    allHtmlConsistencyTestsPassed = false;
-    console.log(`✗ Test HTML->MD->HTML Consistency for ${testCase.name} - FAILED`);
-    console.log(`  Initial HTML (MD->HTML) was saved to: tests/output/html/${testCase.name}.html`);
-    console.log(`  Final HTML (MD->HTML->MD->HTML) was saved to: ${htmlFromMdFromHtmlOutPath}`);
-    // For debugging, log the normalized versions if they differ and are not too long
-    if (normalizedInitialHtml.length < 500 && normalizedFinalHtml.length < 500) {
-        console.log("  Normalized Initial HTML (MD->HTML):\n", normalizedInitialHtml);
-        console.log("  Normalized Final HTML (MD->HTML->MD->HTML):\n", normalizedFinalHtml);
-    } else {
-        console.log("  (Normalized HTMLs are too long to display here, check the saved files.)")
-    }
-  }
-  individualResults.push({ name: `${testCase.name}_HtmlConsistency`, passed: htmlConsistencyPass });
-});
-
-console.log("\n\n=== OVERALL TEST SUMMARY ===");
-individualResults.forEach(res => {
-    console.log(`${res.passed ? '✓' : '✗' } ${res.name}`);
-});
-
-if (allMdRoundtripTestsPassed) {
-  console.log("\n✅ ALL MD->HTML->MD TESTS PASSED (basic preservation check).");
+// Perform a strict comparison between the original Markdown and the round-tripped Markdown.
+// NOTE: Perfect 1:1 Markdown roundtrip conversion is notoriously difficult due to ambiguities
+// in the Markdown specification and the richness of HTML. However, the goal here is to be
+// strict enough to catch the significant formatting losses and structural changes like those
+// reported (e.g., mangled lists, lost code block fences, altered footnote syntax, table corruption).
+// Minor, consistent whitespace differences that don't affect rendering or semantic meaning might
+// be acceptable in some contexts, but for this test, we start with high strictness.
+// If specific, known-acceptable differences are identified later, this comparison logic
+// could be refined (e.g., by implementing a more sophisticated normalization or diffing strategy).
+// For now, any deviation beyond trimming leading/trailing whitespace is considered a failure,
+// prompting an investigation into the converter.js logic (Showdown, Turndown, or postProcessMarkdown).
+if (originalMarkdown.trim() !== fullRoundTripMarkdown.trim()) {
+  console.error("ERROR: Full example markdown did not survive the roundtrip conversion (MD -> HTML -> MD) faithfully.");
+  console.error("Original Markdown (from 'tests/example markdown.md') differs significantly from the Roundtripped Markdown.");
+  console.error("This indicates a problem in the htmlToMarkdown conversion process or the preceding markdownToHtml step.");
+  console.error("Please compare the content of 'tests/example markdown.md' with the generated file 'tests/output/md/full_document_roundtrip_from_test.md'.");
+  console.error("The intermediate HTML output, which was converted back to Markdown, can be found at 'tests/output/html/full_document_generated_for_test.html'.");
+  // For CI/automation and clear test failure reporting, throwing an error is essential.
+  throw new Error("Markdown roundtrip test failed for the full example document. Original and roundtripped versions differ. Check console output and the generated files in tests/output/ for details.");
 } else {
-  console.log("\n❌ SOME MD->HTML->MD TESTS FAILED (basic preservation check). Review logs and output files.");
+  console.log("SUCCESS: Full example markdown survived the roundtrip conversion (MD -> HTML -> MD) faithfully in the test environment.");
+  console.log("If discrepancies still appear in the browser application, they might be due to differences in library versions, browser-specific behaviors, or interactions with the rich-text editor (e.g., Quill).");
 }
 
-if (allHtmlConsistencyTestsPassed) {
-  console.log("\n✅ ALL HTML->MD->HTML CONSISTENCY TESTS PASSED.");
-} else {
-  console.log("\n❌ SOME HTML->MD->HTML CONSISTENCY TESTS FAILED. Review logs and output files.");
-}
-
-console.log("\nNote: MD roundtrip tests primarily check for basic roundtrip conversion and output file generation.");
-console.log("Note: HTML consistency tests check if (MD -> HTML) is consistent with (MD -> HTML -> MD -> HTML).");
-console.log("Further validation should involve inspecting the .html and .md files in tests/output/");
-console.log("and potentially adding more specific assertion logic for each feature.");
+console.log("\n=== ALL TESTS COMPLETED (including comprehensive roundtrip) ===");
 
 
 // --- Keeping parts of the old structure for HTML and Markdown specific checks if needed ---
@@ -444,16 +401,175 @@ function runDetailedChecks() {
 // runDetailedChecks();
 
 
-// The old checkForKeyElements and checkHtmlListStructure can be removed or adapted.
-// For now, they are left below but commented out or not directly used in the new flow.
-// It's better to build specific checks for each snippet type.
+// --- Add a specific test for list type preservation ---
+// This test is meant to detect when bullet lists incorrectly get converted to numbered lists.
+// We need this because individual feature tests can pass while the full document still 
+// has issues when combined.
 
-/*
-// ... (old checkForKeyElements, extractListMarkdownSection, checkHtmlListStructure, extractListStructures, extractSection)
-// These functions were designed for the single large roundtrip test.
-// They would need significant adaptation to be used effectively with the new individual test structure.
-// It's generally better to write new, focused assertion functions for each type of markdown feature
-// that load the specific output files and check for expected HTML and Markdown.
-*/
+function runListTypePreservationTest() {
+  console.log("\n=== TESTING LIST TYPE PRESERVATION ===");
+  console.log("This test validates that bullet lists stay as bullet lists and ordered lists stay as ordered lists.");
+  
+  // Read the original and converted markdown files
+  const fullDocumentConvertedPath = path.join(mdOutputDir, 'full_document.md');
+  
+  if (!fs.existsSync(fullDocumentConvertedPath)) {
+    console.log("❌ Cannot run list type preservation test - full_document.md not found");
+    return false;
+  }
+  
+  const originalMarkdown = fs.readFileSync(exampleMdPath, 'utf8');
+  const convertedMarkdown = fs.readFileSync(fullDocumentConvertedPath, 'utf8');
+  
+  // Extract the bullet list section
+  const bulletSection = "#### Bullet";
+  const taskSection = "#### Task List";
+  
+  const originalBulletSection = extractSection(originalMarkdown, bulletSection, taskSection);
+  const convertedBulletSection = extractSection(convertedMarkdown, bulletSection, taskSection);
+  
+  if (!originalBulletSection || !convertedBulletSection) {
+    console.log("❌ Could not locate bullet list sections in both documents");
+    return false;
+  }
+  
+  // Count bullet markers in original and converted
+  const originalBulletCount = (originalBulletSection.match(/^\s*[\*\-]/gm) || []).length;
+  const convertedBulletCount = (convertedBulletSection.match(/^\s*[\*\-]/gm) || []).length;
+  const convertedNumberedCount = (convertedBulletSection.match(/^\s*\d+\./gm) || []).length;
+  
+  let bulletListsPreserved = true;
+  
+  // If original had bullets but converted has none and instead has numbered items
+  if (originalBulletCount > 0 && convertedBulletCount === 0 && convertedNumberedCount > 0) {
+    console.log(`❌ CRITICAL ERROR: Bullet lists were converted to numbered lists!`);
+    console.log(`   Original had ${originalBulletCount} bullet items, converted has ${convertedNumberedCount} numbered items instead.`);
+    bulletListsPreserved = false;
+    
+    // Show a part of the problematic section
+    console.log("\nOriginal bullet list section:");
+    console.log(originalBulletSection.substring(0, 200) + (originalBulletSection.length > 200 ? "..." : ""));
+    console.log("\nConverted section (showing incorrect numbered list):");
+    console.log(convertedBulletSection.substring(0, 200) + (convertedBulletSection.length > 200 ? "..." : ""));
+  } else {
+    console.log(`✓ Bullet lists preserved correctly (${convertedBulletCount}/${originalBulletCount} bullet markers)`);
+  }
+  
+  // Now check task list preservation
+  const originalTaskSection = extractSection(originalMarkdown, taskSection, "# Escape");
+  const convertedTaskSection = extractSection(convertedMarkdown, taskSection, "# Escape");
+  
+  if (originalTaskSection && convertedTaskSection) {
+    // Look for task list checkboxes in both
+    const originalCheckboxes = (originalTaskSection.match(/\[\s?\]|\[x\]/gi) || []).length;
+    const convertedCheckboxes = (convertedTaskSection.match(/\[\s?\]|\[x\]/gi) || []).length;
+    const convertedTaskNumbered = (convertedTaskSection.match(/^\s*\d+\./gm) || []).length;
+    
+    if (originalCheckboxes > 0 && convertedCheckboxes === 0 && convertedTaskNumbered > 0) {
+      console.log(`❌ CRITICAL ERROR: Task list checkboxes were lost and converted to numbered list!`);
+      bulletListsPreserved = false;
+      
+      // Show a part of the problematic section
+      console.log("\nOriginal task list section:");
+      console.log(originalTaskSection.substring(0, 200) + (originalTaskSection.length > 200 ? "..." : ""));
+      console.log("\nConverted section (showing incorrect format):");
+      console.log(convertedTaskSection.substring(0, 200) + (convertedTaskSection.length > 200 ? "..." : ""));
+    } else {
+      console.log(`✓ Task list format preserved correctly (${convertedCheckboxes}/${originalCheckboxes} checkboxes)`);
+    }
+  }
+  
+  if (bulletListsPreserved) {
+    console.log("\n✅ LIST TYPE PRESERVATION TEST PASSED");
+  } else {
+    console.log("\n❌ LIST TYPE PRESERVATION TEST FAILED - Lists were not correctly preserved!");
+  }
+  
+  return bulletListsPreserved;
+}
+
+// Run the list type preservation test after the comprehensive test
+let listPreservationTestPassed = runListTypePreservationTest();
 
 console.log("\nFinished running tests. Check the 'tests/output' directory for generated files.");
+
+// --- Add specific test for strikethrough formatting preservation ---
+function testStrikethroughPreservation() {
+  console.log("\n=== TESTING STRIKETHROUGH PRESERVATION ===");
+  console.log("This test specifically checks that strikethrough format is preserved in conversion.");
+
+  // Read the original and converted markdown files
+  const fullDocumentConvertedPath = path.join(mdOutputDir, 'full_document.md');
+  
+  if (!fs.existsSync(fullDocumentConvertedPath)) {
+    console.log("❌ Cannot run strikethrough preservation test - full_document.md not found");
+    return false;
+  }
+  
+  const originalMarkdown = fs.readFileSync(exampleMdPath, 'utf8');
+  const convertedMarkdown = fs.readFileSync(fullDocumentConvertedPath, 'utf8');
+  
+  // Look for strikethrough in the original markdown
+  const strikethroughMatches = originalMarkdown.match(/~~([^~]+)~~/g) || [];
+  const delTagMatches = originalMarkdown.match(/<del>([^<]+)<\/del>/g) || [];
+  
+  if (strikethroughMatches.length === 0 && delTagMatches.length === 0) {
+    console.log("ℹ️ No strikethrough content found in original markdown to test");
+    return true; // Nothing to test
+  }
+  
+  let allStrikethroughPreserved = true;
+  
+  // Check each strikethrough match
+  for (const match of strikethroughMatches) {
+    const content = match.replace(/~~/g, ''); // Extract content without ~~ markers
+    
+    // Check if the content exists in the converted markdown
+    if (!convertedMarkdown.includes(content)) {
+      console.log(`❌ Strikethrough content "${content}" was completely lost in conversion`);
+      allStrikethroughPreserved = false;
+      continue;
+    }
+    
+    // Check if it's still marked as strikethrough (either with ~~ or within <del> tags)
+    const hasStrikethrough = convertedMarkdown.includes(`~~${content}~~`);
+    const hasDelTag = convertedMarkdown.includes(`<del>${content}</del>`);
+    
+    if (!hasStrikethrough && !hasDelTag) {
+      console.log(`❌ Content "${content}" exists but lost its strikethrough formatting`);
+      allStrikethroughPreserved = false;
+    }
+  }
+  
+  // Check <del> tags similarly
+  for (const match of delTagMatches) {
+    const content = match.replace(/<del>|<\/del>/g, ''); // Extract content without del tags
+    
+    // Check if the content exists in the converted markdown
+    if (!convertedMarkdown.includes(content)) {
+      console.log(`❌ <del> tag content "${content}" was completely lost in conversion`);
+      allStrikethroughPreserved = false;
+      continue;
+    }
+    
+    // Check if it's still marked as strikethrough (either with ~~ or within <del> tags)
+    const hasStrikethrough = convertedMarkdown.includes(`~~${content}~~`);
+    const hasDelTag = convertedMarkdown.includes(`<del>${content}</del>`);
+    
+    if (!hasStrikethrough && !hasDelTag) {
+      console.log(`❌ Content "${content}" exists but lost its <del> tag formatting`);
+      allStrikethroughPreserved = false;
+    }
+  }
+  
+  if (allStrikethroughPreserved) {
+    console.log("✅ STRIKETHROUGH PRESERVATION TEST PASSED");
+  } else {
+    console.log("❌ STRIKETHROUGH PRESERVATION TEST FAILED - Strikethrough formatting was lost!");
+  }
+  
+  return allStrikethroughPreserved;
+}
+
+// Run the strikethrough preservation test
+let strikethroughPreservationPassed = testStrikethroughPreservation();
