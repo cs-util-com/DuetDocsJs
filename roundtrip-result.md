@@ -24,14 +24,14 @@
 #### Ordered
 
 1. Ordered
-   1. Subordered 0
-   1. Sub ordered 1
-   1. Sub ordered 2
-         1. Sub Sub ordered 1
-1. Another
-   * Sub unordered
-          1. Sub ordered 1
-          1. Sub ordered 2
+      1. Subordered 0
+      1. Sub ordered 1
+      1. Sub ordered 2
+               1. Sub Sub ordered 1
+2. Another
+    * Sub unordered
+        1. Sub ordered 1
+        1. Sub ordered 2
 
 #### Bullet
 
@@ -80,12 +80,14 @@ Footnote here[^1] and inline footnote[^Quick note].
 
 `Inline code` and `code blocks`:
 
-```\nconsole.log('Hi');\n```
+```js
+console.log('Hi');
+```
 
 # Tables
 
 | Left | Center | Right |
-| --- | :--: | ---:
+| :--- | :----: | ----: |
 | a | b | c |
 | d | e | f |
 

@@ -333,7 +333,39 @@ console.log('Hi');
     // The above checks for proper checkbox syntax
     info: "Checks that task list checkboxes are preserved."
   });
-  
+
+  // 1. Ordered lists should not contain any bullet markers
+  checks.push({
+    name: 'Ordered List: No Bullet Markers',
+    expected: "No '*' or '-' in ordered list section",
+    actual: !/^\s*[\*-]\s/m.test(actualOrderedListSection),
+    info: "Ordered lists should not contain bullet markers."
+  });
+
+  // 2. Bullet lists should not contain any numbered markers
+  checks.push({
+    name: 'Bullet List: No Numbered Markers',
+    expected: "No '1.' or '2.' in bullet list section",
+    actual: !/^\s*\d+\.\s/m.test(actualBulletListSection),
+    info: "Bullet lists should not contain numbered markers."
+  });
+
+  // 3. Task lists should contain checkboxes
+  checks.push({
+    name: 'Task List: Contains Checkboxes',
+    expected: "Task list items contain [ ] or [x]",
+    actual: /^\s*[\*-]\s+\[( |x)\]/m.test(actualTaskListSection),
+    info: "Task lists should contain [ ] or [x] checkboxes."
+  });
+
+  // 4. Nested lists: check for indentation
+  checks.push({
+    name: 'Nested Lists: Indentation',
+    expected: "Nested list items are indented",
+    actual: /^\s{2,}[\*-1]/m.test(actualOrderedListSection + '\n' + actualBulletListSection),
+    info: "Nested list items should be indented with spaces."
+  });
+
   const results = checks.map(check => {
     // If 'actual' is already a boolean (from includes or test()), use it directly.
     const pass = typeof check.actual === 'boolean' ? check.actual : false; // Default to false if check.actual wasn't a boolean
