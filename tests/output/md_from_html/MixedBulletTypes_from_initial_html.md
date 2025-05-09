@@ -1,4 +1,1 @@
-* Bullet
-* Bullet
-* Also Bullet
-* Also Bullet
+* Bullet\\n\* Bullet\\n- Also Bullet\\n- Also Bullet

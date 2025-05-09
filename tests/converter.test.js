@@ -25,30 +25,41 @@ console.log("\n=== INDIVIDUAL MARKDOWN FEATURE CONVERSION TESTS & HTML CONSISTEN
 
 // Function to normalize HTML content for comparison
 function normalizeHtmlForCompare(html) {
+  // 0. Remove HTML comments
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
+
   // 1. Remove all HTML tags
   let textContent = html.replace(/<[^>]+>/g, '');
 
-  // 2. Replace literal \\\\\\\\r\\\\\\\\n, \\\\\\\\r, \\\\\\\\n with a single actual newline character
-  textContent = textContent.replace(/\\\\\\\\\\\\\\\\r\\\\\\\\\\\\\\\\n|\\\\\\\\\\\\\\\\r|\\\\\\\\\\\\\\\\n/g, '\\\\n');
+  // 2. Decode common HTML entities to characters
+  textContent = textContent.replace(/&nbsp;/g, ' ')
+                           .replace(/&#160;/g, ' ') // non-breaking space
+                           .replace(/&amp;/g, '&')   // ampersand
+                           .replace(/&lt;/g, '<')    // less than
+                           .replace(/&gt;/g, '>')    // greater than
+                           .replace(/&quot;/g, '"')  // double quote
+                           .replace(/&#39;/g, "'");  // single quote (apostrophe)
 
-  // 3. Normalize actual newlines: \\\\r\\\\n -> \\\\n, \\\\r -> \\\\n
-  textContent = textContent.replace(/\\\\r\\\\n?/g, '\\\\n');
+  // 3. Normalize all newline types (literal string versions and actual ones) to a single ACTUAL newline character (\n)
+  textContent = textContent.replace(/\\\\r\\\\n|\\\\r|\\\\n|\r\n|\r/g, '\n');
 
-  // 4. Split into lines
-  let lines = textContent.split('\\n');
+  // 4. Split into lines based on the ACTUAL newline character
+  let lines = textContent.split('\n'); // Split by ACTUAL \n
 
   // 5. Process each line:
-  //    a. Replace all occurrences of whitespace characters (e.g., spaces, tabs, &nbsp;) with a single space
-  //    b. Trim leading/trailing spaces from the line
   lines = lines.map(line => {
-    return line.replace(/\s+/g, ' ').trim(); // Corrected: /\\s+/g in tool input becomes /\s+/g in JS
+    // a. Trim leading/trailing whitespace from the original line.
+    // b. Replace multiple internal whitespace characters (e.g., spaces, tabs) with a single space using the correct regex: /\s+/g.
+    // c. Trim again to remove any leading/trailing space that might have been introduced if the line was e.g. "   " -> " " by replace.
+    return line.trim().replace(/\s+/g, ' ').trim(); // Corrected regex for whitespace collapsing
   });
 
-  // 6. Filter out lines that became empty after trimming
+  // 6. Filter out lines that became empty after all processing
   lines = lines.filter(line => line.length > 0);
 
-  // 7. Join non-empty lines with a single newline, then trim the whole block.
-  textContent = lines.join('\\\\n').trim();
+  // 7. Join non-empty lines with a single ACTUAL newline.
+  //    Then, trim the entire block of text to remove any leading/trailing newlines or spaces.
+  textContent = lines.join('\n').trim(); // Use actual newline for joining and trim the result
 
   // 8. Optional: convert to lowercase for case-insensitive comparison
   textContent = textContent.toLowerCase();
@@ -208,7 +219,19 @@ const testsToRun = [
   },
   {
     name: "MixedBulletTypes",
-    markdown: "* Bullet\n* Bullet\n- Also Bullet\n- Also Bullet"
+    markdown: "* Bullet\\n* Bullet\\n- Also Bullet\\n- Also Bullet"
+  },
+  {
+    name: "DeeplyNestedOrderedList",
+    markdown: "1. Level 1\\n   1. Level 2\\n      1. Level 3\\n         1. Level 4"
+  },
+  {
+    name: "DeeplyNestedUnorderedList",
+    markdown: "* Level 1\\n  * Level 2\\n    * Level 3\\n      * Level 4"
+  },
+  {
+    name: "MixedDeepNestingAlternating",
+    markdown: "1. Ordered L1 Item 1\\n   * Unordered L2 Item A\\n     1. Ordered L3 Item 1.A.1\\n        * Unordered L4 Item A.A.a\\n   * Unordered L2 Item B\\n2. Ordered L1 Item 2"
   }
 ];
 
