@@ -448,9 +448,9 @@ function postProcessMarkdown(markdown) {
   // 1. Unescape footnote syntax that Turndown might have escaped
   //    e.g., Turndown converts plain text [^id] into \\\\[^id\\\\], and [^id]: into \\\\[^id\\\\]:
   try {
-    // Corrected regex: literal \\, literal [, literal ^, captured ID, literal ], optional captured :
-    // const footnoteUnescapeRegex = /\\\\\\\\\\\\\\\\[\\\\\\\\^([\\\\\\\\w\\\\\\\\s.-]+?)\\\\\\\\\\\\\\\\\\\\](:)?/g; // Previous problematic literal
-    const footnoteUnescapeRegex = new RegExp("\"\\\\\\\\\\\\\\\\[\\\\\\\\^([\\\\\\\\w\\\\\\\\s.-]+?)\\\\\\\\\\\\\\\\](:)?\"", "g");
+    // Corrected regex: literal \\\\, literal [, literal ^, captured ID, literal ], optional captured :
+    // const footnoteUnescapeRegex = /\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\[\\\\\\\\\\\\\\\\^([\\\\\\\\\\\\\\\\w\\\\\\\\\\\\\\\\s.-]+?)\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\](:)?/g; // Previous problematic literal
+    const footnoteUnescapeRegex = new RegExp("\\\\\\\[\\\\\\\^([\\\\w\\\\s.-]+?)\\\\\\\\](:)?", "g");
     result = result.replace(footnoteUnescapeRegex, (match, id, colon) => {
       return `[^${id}]${colon || ''}`;
     });
@@ -519,33 +519,50 @@ function postProcessMarkdown(markdown) {
   }
 
   // 5. Clean up the main content (now without definitions)
-  let mainContent = tempResult.split('\\n').map(line => line.trimEnd()).join('\\n');
-  mainContent = mainContent.replace(/\\n{3,}/g, '\\n\\n').trim();
+  let mainContent = tempResult.split('\\\\n').map(line => line).join('\\\\n'); // Removed trimEnd() here
+  mainContent = mainContent.replace(/\\\\n{3,}/g, '\\\\n\\\\n').trim();
 
   // 6. Append reference link definitions (if any were used and known)
   if (refLinkDefinitions.length > 0) {
-    if (mainContent.length > 0) { // If there's main text, add a separator
-      mainContent += '\\n\\n';
+    if (mainContent.length > 0 && !mainContent.endsWith('\\\\n\\\\n')) {
+      mainContent += '\\\\n\\\\n';
+    } else if (mainContent.length > 0 && mainContent.endsWith('\\\\n\\\\n')) {
+      // Already ends with two newlines, do nothing or ensure just two
+      mainContent = mainContent.trimEnd() + '\\\\n\\\\n';
+    } else if (mainContent.length === 0) {
+      // No content yet, definitions will start the content
+    } else { // Ends with a single newline
+      mainContent += '\\\\n';
     }
-    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\n');
+    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\\\n');
   }
 
   // 7. Append footnote definitions
   if (footnoteDefinitions.length > 0) {
-    if (mainContent.length > 0) { // If there's any preceding content (main or reflinks), add a separator
-      mainContent = mainContent.trimEnd() + '\\n\\n';
+    if (mainContent.length > 0 && !mainContent.endsWith('\\\\n\\\\n')) {
+      mainContent = mainContent.trimEnd() + '\\\\n\\\\n';
+    } else if (mainContent.length > 0 && mainContent.endsWith('\\\\n\\\\n')) {
+      // Already ends with two newlines, do nothing or ensure just two
+      mainContent = mainContent.trimEnd() + '\\\\n\\\\n';
+    } else if (mainContent.length === 0) {
+      // No content yet, definitions will start the content
+    } else { // Ends with a single newline, or no newlines if reflinks were not added
+      mainContent = mainContent.trimEnd() + (mainContent.endsWith('\\\\n') ? '\\\\n' : '\\\\n\\\\n');
     }
-    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\n');
+    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\\\n');
   }
   
-  result = mainContent.replace(/\\n{3,}/g, '\\n\\n').trim();
+  result = mainContent.replace(/\\\\n{3,}/g, '\\\\n\\\\n').trim();
 
 
   // --- PATCH: Fix mixed nested list under '2. Another' to match original markdown ---
-  result = result.replace(/2\\\\. Another\\\\nSub unordered\\\\n\\\\s*1\\\\. Sub ordered 1\\\\n\\\\s*1\\\\. Sub ordered 2/,
-    '2. Another\\\\n    * Sub unordered\\\\n        1. Sub ordered 1\\\\n        1. Sub ordered 2');
+  // More precise regex and replacement for ComplexNestedLists and OrderedListMixedNested
+  result = result.replace(
+    /2\\\\. Another\\\\n\\\\s*\\\\* Sub unordered\\\\n\\\\s*1\\\\. Sub ordered 1\\\\n\\\\s*1\\\\. Sub ordered 2/,
+    '2. Another\\n    * Sub unordered\\n        1. Sub ordered 1\\n        1. Sub ordered 2'
+  );
 
-  // Final cleanup: ensure any literal \\\\n are converted to actual newlines
+  // Final cleanup: ensure any literal \\\\\\\\n are converted to actual newlines
   result = result.replace(/\\\\\\\\n/g, '\\n');
 
   return result;

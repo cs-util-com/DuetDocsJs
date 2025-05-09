@@ -25,13 +25,32 @@ console.log("\n=== INDIVIDUAL MARKDOWN FEATURE CONVERSION TESTS & HTML CONSISTEN
 
 // Function to normalize HTML content for comparison
 function normalizeHtmlForCompare(html) {
-  // Remove all HTML tags
+  // 1. Remove all HTML tags
   let textContent = html.replace(/<[^>]+>/g, '');
-  // Replace literal \\r\\n, \\r, \\n with a single actual newline character
-  textContent = textContent.replace(/\\\\r\\\\n|\\\\r|\\\\n/g, '\\n');
-  // Normalize all whitespace (including actual newlines and multiple spaces) to a single space
-  textContent = textContent.replace(/\\s+/g, ' ').trim();
-  // Optional: convert to lowercase for case-insensitive comparison
+
+  // 2. Replace literal \\\\\\\\r\\\\\\\\n, \\\\\\\\r, \\\\\\\\n with a single actual newline character
+  textContent = textContent.replace(/\\\\\\\\\\\\\\\\r\\\\\\\\\\\\\\\\n|\\\\\\\\\\\\\\\\r|\\\\\\\\\\\\\\\\n/g, '\\\\n');
+
+  // 3. Normalize actual newlines: \\\\r\\\\n -> \\\\n, \\\\r -> \\\\n
+  textContent = textContent.replace(/\\\\r\\\\n?/g, '\\\\n');
+
+  // 4. Split into lines
+  let lines = textContent.split('\\n');
+
+  // 5. Process each line:
+  //    a. Replace all occurrences of whitespace characters (e.g., spaces, tabs, &nbsp;) with a single space
+  //    b. Trim leading/trailing spaces from the line
+  lines = lines.map(line => {
+    return line.replace(/\s+/g, ' ').trim(); // Corrected: /\\s+/g in tool input becomes /\s+/g in JS
+  });
+
+  // 6. Filter out lines that became empty after trimming
+  lines = lines.filter(line => line.length > 0);
+
+  // 7. Join non-empty lines with a single newline, then trim the whole block.
+  textContent = lines.join('\\\\n').trim();
+
+  // 8. Optional: convert to lowercase for case-insensitive comparison
   textContent = textContent.toLowerCase();
   return textContent;
 }
@@ -229,7 +248,8 @@ testsToRun.forEach(testCase => {
   const normalizedInitialHtml = normalizeHtmlForCompare(initialHtmlForConsistency);
   const normalizedFinalHtml = normalizeHtmlForCompare(finalHtmlForConsistency);
 
-  let htmlConsistencyPass = normalizedInitialHtml === normalizedFinalHtml;
+  // Trim both strings right before comparison to handle potential trailing newline differences
+  let htmlConsistencyPass = normalizedInitialHtml.trim() === normalizedFinalHtml.trim();
 
   // If they are not identical, but both are effectively empty after normalization, consider it a pass.
   if (!htmlConsistencyPass && normalizedInitialHtml === "" && normalizedFinalHtml === "") {
