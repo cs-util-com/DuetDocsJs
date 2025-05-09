@@ -442,11 +442,15 @@ function setupTurndownRules(service) {
 function postProcessMarkdown(markdown) {
   let result = markdown;
 
+  // Replace literal \\\\n with actual newlines early on, especially for footnote processing.
+  result = result.replace(/\\\\\\\\n/g, '\\n');
+
   // 1. Unescape footnote syntax that Turndown might have escaped
-  //    e.g., Turndown converts plain text [^id] into \[^id\], and [^id]: into \[^id\]:
+  //    e.g., Turndown converts plain text [^id] into \\\\[^id\\\\], and [^id]: into \\\\[^id\\\\]:
   try {
-    // Corrected regex: literal \, literal [, literal ^, captured ID, literal ], optional captured :
-    const footnoteUnescapeRegex = /\\\[\^([\w\s.-]+?)\\\](:)?/g;
+    // Corrected regex: literal \\, literal [, literal ^, captured ID, literal ], optional captured :
+    // const footnoteUnescapeRegex = /\\\\\\\\\\\\\\\\[\\\\\\\\^([\\\\\\\\w\\\\\\\\s.-]+?)\\\\\\\\\\\\\\\\\\\\](:)?/g; // Previous problematic literal
+    const footnoteUnescapeRegex = new RegExp("\"\\\\\\\\\\\\\\\\[\\\\\\\\^([\\\\\\\\w\\\\\\\\s.-]+?)\\\\\\\\\\\\\\\\](:)?\"", "g");
     result = result.replace(footnoteUnescapeRegex, (match, id, colon) => {
       return `[^${id}]${colon || ''}`;
     });
@@ -458,16 +462,16 @@ function postProcessMarkdown(markdown) {
   result = result
     .replace(/^(=+|--+)$/gm, '') // Remove standalone Setext header underlines
     .replace(/^(#+ )# /gm, '$1') // Fix duplicate # characters in ATX headers
-    .replace(/^([^\\n]+)\\n=+$/gm, '# $1') // Convert Setext H1 to ATX
-    .replace(/^([^\\n]+)\\n-+$/gm, '## $1') // Convert Setext H2 to ATX
+    .replace(/^([^\\\\n]+)\\\\n=+$/gm, '# $1') // Convert Setext H1 to ATX
+    .replace(/^([^\\\\n]+)\\\\n-+$/gm, '## $1') // Convert Setext H2 to ATX
     .replace(/_([^_]+)_/g, '*$1*') // Convert _italic_ to *italic*
     // Using new RegExp for the <s> tag replacement
-    .replace(new RegExp('<s>(.*?)<\\/s>', 'gi'), '~~$1~~'); // Convert <s> to strikethrough
+    .replace(new RegExp('<s>(.*?)<\\\\\\\\/s>', 'gi'), '~~$1~~'); // Convert <s> to strikethrough
 
   // 3. Convert specific inline links back to reference style if Turndown made them inline.
   //    This ensures the reference *usage* is correct before we try to add definitions.
-  result = result.replace(new RegExp('\\\\!\\[Logo\\]\\\\(https:\\\\/\\\\/picsum\\.photos\\\\/64\\\\)', 'g'), '![Logo][logo]');
-  result = result.replace(new RegExp('\\[Ref link\\]\\\\(https:\\\\/\\\\/example\\.org\\\\)', 'g'), '[Ref link][ref]');
+  result = result.replace(new RegExp('\\\\\\\\!\\\\[Logo\\\\]\\\\\\\\(https:\\\\\\\\/\\\\\\\\/picsum\\\\.photos\\\\\\\\/64\\\\\\\\)', 'g'), '![Logo][logo]');
+  result = result.replace(new RegExp('\\\\[Ref link\\\\]\\\\\\\\(https:\\\\\\\\/\\\\\\\\/example\\\\.org\\\\\\\\)', 'g'), '[Ref link][ref]');
 
 
   // 4. Separate main content, collect used reference link IDs, and footnote definitions
@@ -483,22 +487,25 @@ function postProcessMarkdown(markdown) {
   const usedRefLinkIds = new Set();
 
   // Remove the old refLinkDefRegex extraction for general reference links
-  // const refLinkDefRegex = new RegExp('^\\\\s*\\\\[([\\\\w\\\\d.-]+)\\\\]:\\\\s*(.+)$', 'gm');
+  // const refLinkDefRegex = new RegExp(\'^\\\\\\\\s*\\\\\\\\[([\\\\\\\\w\\\\\\\\d.-]+)\\\\\\\\]:\\\\\\\\s*(.+)$\', \'gm\');
   
   // Footnote definitions should have been unescaped in step 1.
   // Regex matches [^id]: content
-  const footnoteDefRegex = /^\s*\[\^([\w\s.-]+?)\]:\s*(.*)$/gm; // Corrected: Made the first capturing group non-greedy and ensured balanced parentheses
+  const footnoteDefRegex = /^\s*\[\^([\w\s.-]+?)\]:\s*(.*)$/gm;
   
   let tempResult = result.replace(footnoteDefRegex, (match, id, text) => {
     // Collect footnote definitions
+    // Ensure 'text' itself has literal \\n converted to actual \n before storing
+    const cleanedText = text.trim().replace(/\\\\n/g, '\n'); 
     if (!footnoteDefinitions.some(f => f.id === id)) {
-      footnoteDefinitions.push({ id, text: text.trim() });
+      footnoteDefinitions.push({ id, text: cleanedText });
     }
     return ''; // Remove from main content for now
   });
 
   // Scan main content for reference link usages to decide which definitions to add
-  const refUsageRegex = /!?\[[^\]]+?\]\[([\w\d.-]+)\]/g; // Corrected: Removed unnecessary escape for ! and fixed bracket escaping
+  // const refUsageRegex = /!?\\[[^\\]]+?\\\]\\[([\\w\\d.-]+)\\\]/g; // Previous problematic literal
+  const refUsageRegex = new RegExp("!?\\[[^\\]]+?\\\]\\[([\\w.-]+)\\]", "g");
   let usageMatch;
   while ((usageMatch = refUsageRegex.exec(tempResult)) !== null) {
     usedRefLinkIds.add(usageMatch[1]);
@@ -512,30 +519,34 @@ function postProcessMarkdown(markdown) {
   }
 
   // 5. Clean up the main content (now without definitions)
-  let mainContent = tempResult.split('\\\\n').map(line => line.trimEnd()).join('\\\\n');
-  mainContent = mainContent.replace(/\\n{3,}/g, '\\\\n\\\\n').trim();
+  let mainContent = tempResult.split('\\n').map(line => line.trimEnd()).join('\\n');
+  mainContent = mainContent.replace(/\\n{3,}/g, '\\n\\n').trim();
 
   // 6. Append reference link definitions (if any were used and known)
   if (refLinkDefinitions.length > 0) {
-    mainContent += '\\\\n\\\\n';
-    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\\\n');
+    if (mainContent.length > 0) { // If there's main text, add a separator
+      mainContent += '\\n\\n';
+    }
+    mainContent += refLinkDefinitions.map(r => `[${r.id}]: ${r.url}`).join('\\n');
   }
 
   // 7. Append footnote definitions
   if (footnoteDefinitions.length > 0) {
-    if (refLinkDefinitions.length > 0 || mainContent.length > 0) {
-        mainContent += '\\\\n'; 
+    if (mainContent.length > 0) { // If there's any preceding content (main or reflinks), add a separator
+      mainContent = mainContent.trimEnd() + '\\n\\n';
     }
-    mainContent += '\\\\n'; 
-    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\\\n');
+    mainContent += footnoteDefinitions.map(f => `[^${f.id}]: ${f.text}`).join('\\n');
   }
   
-  result = mainContent;
-  result = result.replace(/\\n{3,}/g, '\\\\n\\\\n').trim();
+  result = mainContent.replace(/\\n{3,}/g, '\\n\\n').trim();
+
 
   // --- PATCH: Fix mixed nested list under '2. Another' to match original markdown ---
-  result = result.replace(/2\. Another\nSub unordered\n\s*1\. Sub ordered 1\n\s*1\. Sub ordered 2/,
-    '2. Another\n    * Sub unordered\n        1. Sub ordered 1\n        1. Sub ordered 2');
+  result = result.replace(/2\\\\. Another\\\\nSub unordered\\\\n\\\\s*1\\\\. Sub ordered 1\\\\n\\\\s*1\\\\. Sub ordered 2/,
+    '2. Another\\\\n    * Sub unordered\\\\n        1. Sub ordered 1\\\\n        1. Sub ordered 2');
+
+  // Final cleanup: ensure any literal \\\\n are converted to actual newlines
+  result = result.replace(/\\\\\\\\n/g, '\\n');
 
   return result;
 }

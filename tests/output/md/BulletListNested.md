@@ -1,4 +1,1 @@
-* Top bullet
-    * Nested bullet 1
-    * Nested bullet 2
-    * Deeper nested bullet
+Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'

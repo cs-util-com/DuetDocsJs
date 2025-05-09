@@ -1,2 +1,1 @@
-**Bold Text**  
-**Also Bold**
+Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'

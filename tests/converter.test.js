@@ -23,6 +23,19 @@ const originalMarkdown = fs.readFileSync(exampleMdPath, 'utf8');
 
 console.log("\n=== INDIVIDUAL MARKDOWN FEATURE CONVERSION TESTS & HTML CONSISTENCY CHECKS ===");
 
+// Function to normalize HTML content for comparison
+function normalizeHtmlForCompare(html) {
+  // Remove all HTML tags
+  let textContent = html.replace(/<[^>]+>/g, '');
+  // Replace literal \\r\\n, \\r, \\n with a single actual newline character
+  textContent = textContent.replace(/\\\\r\\\\n|\\\\r|\\\\n/g, '\\n');
+  // Normalize all whitespace (including actual newlines and multiple spaces) to a single space
+  textContent = textContent.replace(/\\s+/g, ' ').trim();
+  // Optional: convert to lowercase for case-insensitive comparison
+  textContent = textContent.toLowerCase();
+  return textContent;
+}
+
 // Helper function to run a single feature test (MD -> HTML -> MD)
 function testFeature(featureName, markdownSnippet) {
   console.log(`\n--- Testing MD->HTML->MD: ${featureName} ---`);
@@ -62,21 +75,6 @@ function testFeature(featureName, markdownSnippet) {
   }
   return { pass, generatedHtml }; // Return pass status and the intermediate HTML
 }
-
-// Helper function to normalize HTML for comparison (basic text content focus)
-const normalizeHtmlForCompare = (htmlStr) => {
-  if (typeof htmlStr !== 'string') return '';
-  return htmlStr
-    .replace(/<!--[\s\S]*?-->/g, '') // Remove comments
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove script tags
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')   // Remove style tags
-    .replace(/<[^>]+>/g, ' ')         // Replace all tags with a single space
-    .replace(/\s+/g, ' ')            // Collapse multiple whitespaces
-    .replace(/&nbsp;/gi, ' ')        // Treat non-breaking spaces as normal spaces
-    .toLowerCase()                   // Consistent casing for text content
-    .trim();
-};
-
 
 // --- Define Markdown Snippets for Individual Tests ---
 const testsToRun = [
