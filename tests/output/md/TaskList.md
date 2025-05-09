@@ -1,1 +1,3 @@
-Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'
+* [ ] Open Task
+* [x] Completed Task
+* [ ] Another Open Task

@@ -1,1 +1,6 @@
-Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'
+```js
+function greet(name) {
+  console.log(`Hello, ${name}!`);
+}
+greet('World');
+```

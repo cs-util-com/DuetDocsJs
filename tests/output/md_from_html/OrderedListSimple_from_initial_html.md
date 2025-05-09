@@ -1,1 +1,3 @@
-Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'
+1. First item
+2. Second item
+1. Third item

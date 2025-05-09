@@ -1,1 +1,1 @@
-Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'
+[![Clickable alt text](https://picsum.photos/id/80/150/80)](https://example.com/image-target)

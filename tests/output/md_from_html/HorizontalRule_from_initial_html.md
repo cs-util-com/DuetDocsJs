@@ -1,1 +1,13 @@
-Error converting HTML to Markdown: Invalid regular expression: /!?\\[[^\]]+?\]\\[([\w.-]+)\]/g: Unmatched ')'
+Text above
+
+* * *
+
+Text below
+
+* * *
+
+Text after stars
+
+* * *
+
+Text after underscores
