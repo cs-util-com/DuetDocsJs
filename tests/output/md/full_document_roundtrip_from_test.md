@@ -17,33 +17,33 @@
 **Mix of *both***  
 ~~Strike~~  
 [@mention](https://github.com/mention)  
-<del>some html</del>
+~~some html~~
 
 # Lists
 
 #### Ordered
 
-1. Ordered
-      1. Subordered 0
-      1. Sub ordered 1
-      1. Sub ordered 2
-               1. Sub Sub ordered 1
-2. Another
-Sub unordered
-           1. Sub ordered 1
-           1. Sub ordered 2
+1.  Ordered
+    1.  Subordered 0
+    2.  Sub ordered 1
+    3.  Sub ordered 2
+        1.  Sub Sub ordered 1
+2.  Another
+    *   Sub unordered
+        1.  Sub ordered 1
+        2.  Sub ordered 2
 
 #### Bullet
 
-* Bullet
-* Bullet
-* Also Bullet
-* Also Bullet
+*   Bullet
+*   Bullet
+*   Also Bullet
+*   Also Bullet
 
 #### Task List
 
-* [ ] Task Open
-* [x] Task Done
+*   [ ]  Task Open
+*   [x]  Task Done
 
 # Escape
 
@@ -53,7 +53,7 @@ Escape \\*asterisks\\*
 
 [Inline](https://example.com)
 
-[Ref link][ref]
+[Ref link](https://example.org)
 
 [http://example.org](http://example.org)
 
@@ -65,7 +65,7 @@ Escape \\*asterisks\\*
 
 #### Ref:
 
-![Logo][logo]
+![Logo](https://picsum.photos/64)
 
 #### Clickable Image with a link:
 
@@ -88,7 +88,7 @@ console.log('Hi');
 # Tables
 
 | Left | Center | Right |
-| :--- | :----: | ----: |
+| --- | --- | --- |
 | a | b | c |
 | d | e | f |
 
@@ -100,4 +100,4 @@ console.log('Hi');
 
 # Inline HTML
 
-<kbd>Ctrl</kbd> + <kbd>C</kbd>\\n\\n[ref]: https://example.org\\n[logo]: https://picsum.photos/64
+<kbd>Ctrl</kbd> + <kbd>C</kbd>
