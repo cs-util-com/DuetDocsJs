@@ -88,9 +88,9 @@ console.log('Hi');
 # Tables
 
 | Left | Center | Right |
-| :--- | :--: | ---: |
-| a | b | c |
-| d | e | f |
+| :--- | :----: | ----: |
+| a     |   b    |     c |
+| d     |   e    |     f |
 
 # Blockquote
 

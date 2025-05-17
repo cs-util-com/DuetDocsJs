@@ -80,7 +80,19 @@
     replacement: function(content, node) {
       // Cell content should be trimmed.
       // The GFM plugin and other rules might add spaces, so we trim here.
-      return ' ' + content.trim() + ' ';
+      const trimmedContent = content.trim();
+      const align = node.style.textAlign || getComputedStyle(node).textAlign;
+      
+      if (align === 'center') {
+        // Add equal padding on both sides for centered content
+        return ' ' + trimmedContent + ' ';
+      } else if (align === 'right') {
+        // Add more padding on the left for right-aligned content
+        return '    ' + trimmedContent + ' ';
+      } else {
+        // Default (left alignment) - add more padding on the right
+        return ' ' + trimmedContent + '    ';
+      }
     }
   });
   
@@ -104,12 +116,12 @@
           const align = header.style.textAlign || getComputedStyle(header).textAlign;
           let marker;
           switch (align) {
-            case 'left':  marker = ':---'; break;
-            case 'center':marker = ':--:'; break;
-            case 'right': marker = '---:'; break;
-            default:      marker = '---';  break; 
+            case 'left':  marker = ' :--- '; break;
+            case 'center':marker = ' :----: '; break;
+            case 'right': marker = ' ----: '; break;
+            default:      marker = ' --- '; break; 
           }
-          alignmentRow += ' ' + marker + ' |';
+          alignmentRow += marker + '|';
         }
       }
 
@@ -117,7 +129,25 @@
       const rows = Array.from(node.querySelectorAll('tbody tr'));
       rows.forEach(row => {
         const cells = Array.from(row.querySelectorAll('td'));
-        const rowLine = '| ' + cells.map(cell => cell.textContent.trim()).join(' | ') + ' |';
+        const rowLine = '| ' + cells.map((cell, idx) => {
+          const content = cell.textContent.trim();
+          const align = cell.style.textAlign || getComputedStyle(cell).textAlign;
+          
+          // Apply padding based on alignment
+          if (align === 'center') {
+            const totalWidth = headers[idx] ? headers[idx].textContent.trim().length : content.length;
+            const padding = Math.max(totalWidth - content.length, 0);
+            const leftPad = Math.floor(padding / 2);
+            const rightPad = padding - leftPad;
+            return ' '.repeat(leftPad) + content + ' '.repeat(rightPad);
+          } else if (align === 'right') {
+            const totalWidth = headers[idx] ? headers[idx].textContent.trim().length : content.length;
+            const padding = Math.max(totalWidth - content.length, 0);
+            return ' '.repeat(padding) + content;
+          } else { // left alignment
+            return content + ' '.repeat(4); // Add some padding on right for left-aligned
+          }
+        }).join(' | ') + ' |';
         bodyLines.push(rowLine);
       });
       
