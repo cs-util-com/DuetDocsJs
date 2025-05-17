@@ -46,6 +46,7 @@
     keepReferences: true // Attempt to preserve reference-style links/images
   });
   showdownConverter.setFlavor("github");
+  showdownConverter.setOption('ghMentions', false); // Ensure ghMentions is off after setting flavor
   showdownConverter.setOption('tableDelimiter', '|'); // Explicitly set for clarity
 
   // Enable Showdown extension for table compatibility if available or needed
