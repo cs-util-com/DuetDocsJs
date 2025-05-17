@@ -16,7 +16,7 @@
 **Bold** **Bold** ***Bold Italic***  
 **Mix of *both***  
 ~~Strike~~  
-@mention  
+[@mention][1]  
 ~~some html~~
 
 # Lists
@@ -24,18 +24,26 @@
 #### Ordered
 
 1. Ordered
-1. Subordered 0\n    2. Sub ordered 1\n    3. Sub ordered 2
-1. Sub Sub ordered 1\n2. Another
-* Sub unordered
-1. Sub ordered 1\n        2. Sub ordered 2
+    1. Subordered 0
+    2. Sub ordered 1
+    3. Sub ordered 2
+        1. Sub Sub ordered 1
+2. Another
+    * Sub unordered
+        1. Sub ordered 1
+        2. Sub ordered 2
 
 #### Bullet
 
-* Bullet\n* Bullet\n* Also Bullet\n* Also Bullet
+* Bullet
+* Bullet
+* Also Bullet
+* Also Bullet
 
 #### Task List
 
-* [ ]  Task Open\n* [x]  Task Done
+* [ ]  Task Open
+* [x]  Task Done
 
 # Escape
 
@@ -43,11 +51,11 @@ Escape \\*asterisks\\*
 
 # Links
 
-[Inline](https://example.com)
+[Inline][2]
 
-[Ref link](https://example.org)
+[Ref link][3]
 
-[http://example.org](http://example.org)
+[http://example.org][4]
 
 # Images
 
@@ -61,7 +69,7 @@ Escape \\*asterisks\\*
 
 #### Clickable Image with a link:
 
-[![Video](https://picsum.photos/120)](https://youtu.be/dQw4w9WgXcQ)
+[![Video](https://picsum.photos/120)][5]
 
 # Footnotes
 
@@ -93,3 +101,9 @@ console.log('Hi');
 # Inline HTML
 
 <kbd>Ctrl</kbd> + <kbd>C</kbd>
+
+[1]: https://github.com/mention
+[2]: https://example.com
+[3]: https://example.org
+[4]: http://example.org
+[5]: https://youtu.be/dQw4w9WgXcQ

@@ -45,13 +45,7 @@
     ghMentions: false, // Prevent @mention linking
     keepReferences: true // Attempt to preserve reference-style links/images
   });
-  showdownConverter.setFlavor("github");
-  showdownConverter.setOption('ghMentions', false); // Ensure ghMentions is off after setting flavor
-  showdownConverter.setOption('tableDelimiter', '|'); // Explicitly set for clarity
-
-  // Enable Showdown extension for table compatibility if available or needed
-  // Showdown.extension('tableCompat', () => { ... });
-  // showdownConverter.useExtension('tableCompat');
+  showdownConverter.setFlavor('github');
 
   // ────────────────────────────────────────────────────────────
   // Turndown ➜ Markdown
@@ -60,39 +54,73 @@
     headingStyle: "atx",
     bulletListMarker: "*",
     codeBlockStyle: "fenced",
-    emDelimiter: "*", // Consistent with one of the original markdown styles
-    strongDelimiter: "**", // Consistent with one of the original markdown styles
+    emDelimiter: "*", 
+    strongDelimiter: "**",
+    linkStyle: "referenced" // Attempt to preserve reference-style links
   });
 
   if (gfmPlugin) {
-    turndownService.use(gfmPlugin);  }
+    turndownService.use(gfmPlugin);
+  }
 
-  // Custom rule to override the default listItem rule for correct spacing
+  // Custom rule to override the default listItem rule for correct spacing and handling nested content
   turndownService.addRule('customListItem', {
     filter: 'li',
     replacement: function (content, node, options) {
-      content = content
-        .replace(/^\\n+/, '')      // Remove leading newlines
-        .replace(/\\n+$/, '\\n')    // Ensure a single trailing newline if content had newlines
-        .replace(/\\n/gm, '\\n    '); // Indent content with newlines (e.g., nested lists)
+      // Replace literal '\\n' sequences with actual newline characters first.
+      content = content.replace(/\\n/g, '\n');
+
+      // If the content of the list item itself starts with spaces, 
+      // it might be an already-indented nested list. Avoid trimming these leading spaces.
+      let isNestedListContent = content.startsWith('  '); // Heuristic: starts with 2+ spaces
+
+      if (!isNestedListContent) {
+        content = content.trim(); // Trim whitespace only if not likely a pre-indented nested list
+      }
+      
+      // If content has internal newlines (e.g. from a nested list that Turndown processed or our \n replacement),
+      // indent each line of that content. This is crucial for nested structures.
+      if (content.includes('\n')) {
+        // Only add indentation if it's not already correctly indented (heuristic)
+        if (!isNestedListContent) {
+            content = content.replace(/\n/gm, '\n    ');
+        } else {
+            // If it IS nested list content, it should already have its own indentation.
+            // We might need to ensure the *first line* of this content is aligned with the current list item marker.
+            // This part is tricky and might need more refinement based on Turndown's output for nested lists.
+            // For now, let's assume the GFM plugin handles the relative indentation of nested lists correctly
+            // once the literal \n are fixed.
+        }
+      }
 
       var prefix = '';
       var parent = node.parentNode;
       if (parent.nodeName === 'OL') {
         var start = parent.getAttribute('start');
         var index = Array.prototype.indexOf.call(parent.children, node);
-        prefix = (start ? Number(start) + index : index + 1) + '. '; // Number, dot, one space
+        prefix = (start ? Number(start) + index : index + 1) + '. ';
       } else {
-        prefix = options.bulletListMarker + ' '; // Bullet marker, one space
+        prefix = options.bulletListMarker + ' ';
       }
-      return (
-        prefix + content + (node.nextSibling && !/\\n$/.test(content) ? '\\n' : '')
-      );
+      
+      // Determine if a newline is needed after this list item
+      // It's needed if it's not the last item, or if it is the last item but contains multiple lines (e.g. nested list)
+      let trailingNewline = '';
+      if (node.nextSibling) {
+        trailingNewline = '\n';
+      } else if (content.includes('\n')) {
+        // If it's the last item AND it contains newlines (is a nested list/multi-line content)
+        // it might not need an *additional* trailing newline if the content itself ends with one.
+        // However, the standard behavior is that the list item itself provides the newline separation.
+        trailingNewline = '\n'; 
+      }
+
+      return prefix + content + trailingNewline;
     }
   });
 
-  // Minimal custom rules (keep kbd, del)
-  turndownService.keep(["kbd"]); 
+  // Minimal custom rules
+  turndownService.keep(["kbd"]); // preserve <kbd>, <del>, and other inline elements
   turndownService.addRule("del", {
     filter: ["del", "s", "strike"],
     replacement: (content) => `~~${content}~~`,
@@ -270,10 +298,10 @@
     // Fix inline footnote references that may contain spaces [^note text]
     markdown = markdown.replace(/\\\[\^([^\]]+)\\\]/g, '[^$1]');
 
-    // The list item spacing is now handled by the custom 'customListItem' rule,
-    // so these regex replacements are no longer needed.
+    // The list item spacing and structure is now primarily handled by the 'listItem' rule.
+    // These general regex cleanups for list spacing are removed as they might conflict.
     // markdown = markdown.replace(/^(\s*([*\-+])\s+)(?!\s)/gm, '$1');
-    // markdown = markdown.replace(/^(\s*(\d+\.)\s+)(?!\s)/gm, '$1'); 
+    // markdown = markdown.replace(/^(\s*(\d+\.)\s+)(?!\s)/gm, '$1');
     
     return markdown;
   }
