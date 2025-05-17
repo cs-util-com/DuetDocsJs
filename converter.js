@@ -40,7 +40,8 @@
     ghCompatibleHeaderId: true,
     requireSpaceBeforeHeadingText: true,
     tablesHeaderId: true, // Potentially helpful for table processing
-    simpleLineBreaks: false // To better match standard GFM line breaks
+    simpleLineBreaks: false, // To better match standard GFM line breaks
+    footnotes: true // Enable footnotes support
   });
   showdownConverter.setFlavor("github");
   showdownConverter.setOption('tableDelimiter', '|'); // Explicitly set for clarity
@@ -69,6 +70,59 @@
   turndownService.addRule("del", {
     filter: ["del", "s", "strike"],
     replacement: (content) => `~~${content}~~`,
+  });
+  
+  // Enhance table handling to preserve alignment
+  turndownService.addRule('tableCell', {
+    filter: ['th', 'td'],
+    replacement: function(content, node) {
+      // Get cell alignment
+      const alignment = node.style.textAlign;
+      // Handle cell content
+      return ' ' + content + ' |';
+    }
+  });
+  
+  // Custom rule for tables with alignment
+  turndownService.addRule('tableWithAlignment', {
+    filter: 'table',
+    replacement: function (content, node) {
+      // Skip empty tables
+      if (!content.trim()) return '';
+      
+      // Split content into lines
+      const lines = content.trim().split('\n');
+      if (lines.length < 2) return content; // No header/body distinction
+      
+      // Find header row cells
+      const headers = Array.from(node.querySelectorAll('thead th'));
+      if (headers.length === 0) return content;
+      
+      // Build alignment row based on cell styles
+      let alignmentRow = '|';
+      for (const header of headers) {
+        const align = header.getAttribute('style') || '';
+        // Check both attribute and style property
+        let textAlign = header.style.textAlign || '';
+        if (!textAlign && align.includes('text-align:')) {
+          textAlign = align.match(/text-align:\s*(\w+)/i)?.[1] || '';
+        }
+        
+        if (textAlign === 'center') {
+          alignmentRow += ' :----: |';
+        } else if (textAlign === 'right') {
+          alignmentRow += ' ----: |';
+        } else {
+          // Default to left-aligned
+          alignmentRow += ' :---- |';
+        }
+      }
+      
+      // Insert the alignment row after the header
+      lines.splice(1, 1, alignmentRow);
+      
+      return lines.join('\n');
+    }
   });
 
   // Custom rule for footnote references
@@ -118,11 +172,11 @@
       // If the footnoteText itself contains block elements that turndown converts with newlines,
       // those should be preserved. The .trim() above handles outer newlines.
 
-      return `[^${id}]: ${footnoteText}\\n`; // Ensure a newline after the definition
+      return `[^${id}]: ${footnoteText}\n`; // Ensure a newline after the definition, use actual newline, not escaped
     }
   });
 
-  /**
+    /**
    * Convert Markdown to HTML
    * @param {string} markdown
    * @returns {string}
@@ -137,7 +191,19 @@
    * @returns {string}
    */
   function htmlToMarkdown(html) {
-    return turndownService.turndown(html);
+    let markdown = turndownService.turndown(html);
+    
+    // Look for footnote patterns that would be escaped by Turndown and fix them
+    // Fix footnote references [^id]
+    markdown = markdown.replace(/\\\[\^([\w\d-]+)\\\]/g, '[^$1]');
+    
+    // Fix footnote definitions [^id]:
+    markdown = markdown.replace(/\\\[\^([\w\d-]+)\\\]:/g, '[^$1]:');
+    
+    // Fix inline footnote references that may contain spaces [^note text]
+    markdown = markdown.replace(/\\\[\^([^\]]+)\\\]/g, '[^$1]');
+    
+    return markdown;
   }
 
   return { markdownToHtml, htmlToMarkdown };
