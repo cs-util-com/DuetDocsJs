@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { convertHtmlToMarkdown, convertMarkdownToHtml } = require('../converter.js'); // Corrected: convertMarkdownToHtml is the one used for md->html, markdownToHtml was an alias I removed earlier by mistake from the import but it's actually convertMarkdownToHtml. htmlToMarkdown is convertHtmlToMarkdown.
+const converter = require('../converter.js'); // Import the whole module
 
 function normalizeMarkdownForComparison(md) {
     let normalized = md;
@@ -121,14 +121,14 @@ function testFeature(featureName, markdownSnippet) {
 
   // Convert Markdown to HTML
   console.log("Step 1 (MD->HTML): Converting Markdown to HTML...");
-  const generatedHtml = markdownToHtml(markdownSnippet); // This is the HTML we'll use for the consistency check later
+  const generatedHtml = converter.markdownToHtml(markdownSnippet); // Use converter.markdownToHtml
   const htmlOutputPath = path.join(htmlOutputDir, `${featureName}.html`);
   fs.writeFileSync(htmlOutputPath, generatedHtml, 'utf8');
   console.log(`MD->HTML output saved to: ${htmlOutputPath}`);
 
   // Convert HTML back to Markdown
   console.log("\nStep 2 (HTML->MD): Converting HTML back to Markdown...");
-  const roundtripMarkdown = htmlToMarkdown(generatedHtml);
+  const roundtripMarkdown = converter.htmlToMarkdown(generatedHtml); // Use converter.htmlToMarkdown
   const mdOutputPath = path.join(mdOutputDir, `${featureName}.md`);
   fs.writeFileSync(mdOutputPath, roundtripMarkdown, 'utf8');
   console.log(`MD->HTML->MD output saved to: ${mdOutputPath}`);
@@ -302,10 +302,10 @@ if (!fs.existsSync(path.join(outputDir, 'md'))) {
     fs.mkdirSync(path.join(outputDir, 'md'), { recursive: true });
 }
 
-const fullHtmlOutput = convertMarkdownToHtml(exampleMarkdownContent); // Use renamed variable
+const fullHtmlOutput = converter.markdownToHtml(exampleMarkdownContent); // Use converter.markdownToHtml
 fs.writeFileSync(path.join(outputDir, 'html', 'full_document_from_test.html'), fullHtmlOutput);
 
-const fullRoundTripMarkdown = convertHtmlToMarkdown(fullHtmlOutput);
+const fullRoundTripMarkdown = converter.htmlToMarkdown(fullHtmlOutput); // Use converter.htmlToMarkdown
 fs.writeFileSync(path.join(outputDir, 'md', 'full_document_roundtrip_from_test.md'), fullRoundTripMarkdown);
 
 const normalizedOriginal = normalizeMarkdownForComparison(exampleMarkdownContent); // Use renamed variable

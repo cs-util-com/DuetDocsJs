@@ -65,11 +65,34 @@
   });
 
   if (gfmPlugin) {
-    turndownService.use(gfmPlugin); // Apply GFM plugin which includes table support
-  }
+    turndownService.use(gfmPlugin);  }
 
-  // Minimal custom rules
-  turndownService.keep(["kbd"]); // preserve <kbd>
+  // Custom rule to override the default listItem rule for correct spacing
+  turndownService.addRule('customListItem', {
+    filter: 'li',
+    replacement: function (content, node, options) {
+      content = content
+        .replace(/^\\n+/, '')      // Remove leading newlines
+        .replace(/\\n+$/, '\\n')    // Ensure a single trailing newline if content had newlines
+        .replace(/\\n/gm, '\\n    '); // Indent content with newlines (e.g., nested lists)
+
+      var prefix = '';
+      var parent = node.parentNode;
+      if (parent.nodeName === 'OL') {
+        var start = parent.getAttribute('start');
+        var index = Array.prototype.indexOf.call(parent.children, node);
+        prefix = (start ? Number(start) + index : index + 1) + '. '; // Number, dot, one space
+      } else {
+        prefix = options.bulletListMarker + ' '; // Bullet marker, one space
+      }
+      return (
+        prefix + content + (node.nextSibling && !/\\n$/.test(content) ? '\\n' : '')
+      );
+    }
+  });
+
+  // Minimal custom rules (keep kbd, del)
+  turndownService.keep(["kbd"]); 
   turndownService.addRule("del", {
     filter: ["del", "s", "strike"],
     replacement: (content) => `~~${content}~~`,
@@ -246,6 +269,11 @@
     
     // Fix inline footnote references that may contain spaces [^note text]
     markdown = markdown.replace(/\\\[\^([^\]]+)\\\]/g, '[^$1]');
+
+    // The list item spacing is now handled by the custom 'customListItem' rule,
+    // so these regex replacements are no longer needed.
+    // markdown = markdown.replace(/^(\s*([*\-+])\s+)(?!\s)/gm, '$1');
+    // markdown = markdown.replace(/^(\s*(\d+\.)\s+)(?!\s)/gm, '$1'); 
     
     return markdown;
   }

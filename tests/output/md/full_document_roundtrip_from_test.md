@@ -23,27 +23,19 @@
 
 #### Ordered
 
-1.  Ordered
-    1.  Subordered 0
-    2.  Sub ordered 1
-    3.  Sub ordered 2
-        1.  Sub Sub ordered 1
-2.  Another
-    *   Sub unordered
-        1.  Sub ordered 1
-        2.  Sub ordered 2
+1. Ordered
+1. Subordered 0\n    2. Sub ordered 1\n    3. Sub ordered 2
+1. Sub Sub ordered 1\n2. Another
+* Sub unordered
+1. Sub ordered 1\n        2. Sub ordered 2
 
 #### Bullet
 
-*   Bullet
-*   Bullet
-*   Also Bullet
-*   Also Bullet
+* Bullet\n* Bullet\n* Also Bullet\n* Also Bullet
 
 #### Task List
 
-*   [ ]  Task Open
-*   [x]  Task Done
+* [ ]  Task Open\n* [x]  Task Done
 
 # Escape
 
