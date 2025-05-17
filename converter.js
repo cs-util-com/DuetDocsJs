@@ -41,7 +41,9 @@
     requireSpaceBeforeHeadingText: true,
     tablesHeaderId: true, // Potentially helpful for table processing
     simpleLineBreaks: false, // To better match standard GFM line breaks
-    footnotes: true // Enable footnotes support
+    footnotes: true, // Enable footnotes support
+    ghMentions: false, // Prevent @mention linking
+    keepReferences: true // Attempt to preserve reference-style links/images
   });
   showdownConverter.setFlavor("github");
   showdownConverter.setOption('tableDelimiter', '|'); // Explicitly set for clarity
@@ -76,10 +78,9 @@
   turndownService.addRule('tableCell', {
     filter: ['th', 'td'],
     replacement: function(content, node) {
-      // Get cell alignment
-      const alignment = node.style.textAlign;
-      // Handle cell content
-      return ' ' + content + ' |';
+      // Cell content should be trimmed.
+      // The GFM plugin and other rules might add spaces, so we trim here.
+      return ' ' + content.trim() + ' ';
     }
   });
   
@@ -87,41 +88,53 @@
   turndownService.addRule('tableWithAlignment', {
     filter: 'table',
     replacement: function (content, node) {
-      // Skip empty tables
-      if (!content.trim()) return '';
-      
-      // Split content into lines
-      const lines = content.trim().split('\n');
-      if (lines.length < 2) return content; // No header/body distinction
-      
-      // Find header row cells
+      if (!content.trim()) {
+        return '';
+      }
+
       const headers = Array.from(node.querySelectorAll('thead th'));
-      if (headers.length === 0) return content;
-      
-      // Build alignment row based on cell styles
-      let alignmentRow = '|';
-      for (const header of headers) {
-        const align = header.getAttribute('style') || '';
-        // Check both attribute and style property
-        let textAlign = header.style.textAlign || '';
-        if (!textAlign && align.includes('text-align:')) {
-          textAlign = align.match(/text-align:\s*(\w+)/i)?.[1] || '';
-        }
+      let headerLine = '';
+      let alignmentRow = '';
+
+      if (headers.length > 0) {
+        headerLine = '| ' + headers.map(th => th.textContent.trim()).join(' | ') + ' |';
         
-        if (textAlign === 'center') {
-          alignmentRow += ' :----: |';
-        } else if (textAlign === 'right') {
-          alignmentRow += ' ----: |';
-        } else {
-          // Default to left-aligned
-          alignmentRow += ' :---- |';
+        alignmentRow = '|';
+        for (const header of headers) {
+          const align = header.style.textAlign || getComputedStyle(header).textAlign;
+          let marker;
+          switch (align) {
+            case 'left':  marker = ':---'; break;
+            case 'center':marker = ':--:'; break;
+            case 'right': marker = '---:'; break;
+            default:      marker = '---';  break; 
+          }
+          alignmentRow += ' ' + marker + ' |';
         }
       }
+
+      let bodyLines = [];
+      const rows = Array.from(node.querySelectorAll('tbody tr'));
+      rows.forEach(row => {
+        const cells = Array.from(row.querySelectorAll('td'));
+        const rowLine = '| ' + cells.map(cell => cell.textContent.trim()).join(' | ') + ' |';
+        bodyLines.push(rowLine);
+      });
       
-      // Insert the alignment row after the header
-      lines.splice(1, 1, alignmentRow);
-      
-      return lines.join('\n');
+      if (!headerLine && rows.length > 0) { // Handle tables without <thead>
+        const firstRowCells = Array.from(rows[0].querySelectorAll('td'));
+        if (firstRowCells.length > 0) {
+            headerLine = '| ' + firstRowCells.map(cell => cell.textContent.trim()).join(' | ') + ' |';
+            alignmentRow = '| ' + firstRowCells.map(() => '---').join(' | ') + ' |';
+            bodyLines.shift(); 
+        } else {
+            return ''; 
+        }
+      } else if (!headerLine && rows.length === 0) {
+        return '';
+      }
+
+      return headerLine + '\n' + alignmentRow + (bodyLines.length > 0 ? '\n' + bodyLines.join('\n') : '');
     }
   });
 

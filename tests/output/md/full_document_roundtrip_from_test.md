@@ -88,7 +88,7 @@ console.log('Hi');
 # Tables
 
 | Left | Center | Right |
-| --- | --- | --- |
+| :--- | :--: | ---: |
 | a | b | c |
 | d | e | f |
 
