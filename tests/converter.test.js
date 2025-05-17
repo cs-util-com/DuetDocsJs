@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const diff = require('diff'); // Import the diff library
 const { markdownToHtml, htmlToMarkdown } = require('../converter'); // Adjusted path
 
 // Output directories
@@ -282,19 +281,6 @@ if (originalMarkdown.trim() !== fullRoundTripMarkdown.trim()) {
   console.error("This indicates a problem in the htmlToMarkdown conversion process or the preceding markdownToHtml step.");
   console.error("Please compare the content of 'tests/example markdown.md' with the generated file 'tests/output/md/full_document_roundtrip_from_test.md'.");
   console.error("The intermediate HTML output, which was converted back to Markdown, can be found at 'tests/output/html/full_document_generated_for_test.html'.");
-
-  // Generate and print the diff
-  const differences = diff.diffLines(originalMarkdown.trim(), fullRoundTripMarkdown.trim());
-  console.error("\n=== DETAILED DIFFERENCES ===");
-  differences.forEach((part) => {
-    // green for additions, red for deletions
-    // grey for common parts
-    const color = part.added ? '\x1b[32m' : // Green
-      part.removed ? '\x1b[31m' : // Red
-      '\x1b[90m'; // Grey
-    process.stderr.write(color + part.value + '\x1b[0m'); // Reset color
-  });
-  console.error("\n=== END OF DIFFERENCES ===\n");
 
   // For CI/automation and clear test failure reporting, throwing an error is essential.
   throw new Error("Markdown roundtrip test failed for the full example document. Original and roundtripped versions differ. Check console output and the generated files in tests/output/ for details.");
