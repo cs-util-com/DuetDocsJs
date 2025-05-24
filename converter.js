@@ -63,6 +63,16 @@
         kbd: (h, node) => {
           return h(node, 'html', `<kbd>${node.children[0].value}</kbd>`);
         },
+        del: (h, node) => {
+          const value = node.children.map(child => {
+            if (child.type === 'text') return child.value;
+            // If the child is an element, we need to get its HTML representation
+            if (child.type === 'element') return h(child); // This might not be correct, rehype-remark might not have `h` in this context for stringifying arbitrary elements to HTML
+            return '';
+          }).join('');
+          // Instead of creating a 'delete' mdast node, create an 'html' node.
+          return h(node, 'html', `<del>${value}</del>`);
+        },
         li: (h, node) => {
           // Handle task list items
           if (node.children.length > 0) {
@@ -87,22 +97,23 @@
               // Generate the markdown checkbox
               const checkbox = firstChild.properties.checked ? '[x]' : '[ ]';
 
-              // Create a paragraph with the checkbox followed by text
-              return h(node, 'listItem', {}, [
-                h(node, 'paragraph', [h(node, 'text', checkbox + ' ' + text)])
-              ]);
+              // Create a text node with the checkbox followed by text
+              // No need to wrap in a paragraph, as list items can contain text directly.
+              return h(node, 'listItem', {loose: false}, [h(node, 'text', checkbox + ' ' + text)]);
             }
           }
 
           // Handle normal list items - Create paragraph node and text nodes properly
           const children = node.children.map(child => {
             if (child.type === 'text') {
+              // For normal list items, if the direct child is text, it should be wrapped in a paragraph.
               return h(node, 'paragraph', [h(node, 'text', child.value)]);
             }
+            // If the child is already an element (e.g., a nested list), pass it through.
             return h(child);
           });
           
-          return h(node, 'listItem', {}, children);
+          return h(node, 'listItem', {loose: true}, children);
         }
       }
     })
@@ -113,7 +124,8 @@
       fences: true,
       emphasis: "*",
       strong: "*",
-      quote: '"'
+      quote: '"',
+      tightDefinitions: true // Added to potentially help with list spacing
     });
 
   /**

@@ -7,12 +7,12 @@
 <del>some html</del>
 
 --- CONVERTED HTML ---
-<p><em>Italic</em> <em>Italic</em> 
-<strong>Bold</strong> <strong>Bold</strong> <strong><em>Bold Italic</em></strong> 
-<strong>Mix of <em>both</strong></em>
-~~Strike~~ 
-@mention 
+<p><em>Italic</em> <em>Italic</em>
+<strong>Bold</strong> <strong>Bold</strong> <em><strong>Bold Italic</strong></em>
+<strong>Mix of <em>both</em></strong>
+~~Strike~~
+@mention
 <del>some html</del></p>
 
 --- RECONVERTED MARKDOWN ---
-_Italic_ _Italic_ **Bold** **Bold** **_Bold Italic_** **Mix of _both_** ~~Strike~~ @mention some html
+*Italic* *Italic* **Bold** **Bold** ***Bold Italic*** **Mix of *both*** ~~Strike~~ @mention <del>some html</del>
