@@ -38,7 +38,7 @@ if (!fs.existsSync(outputDir)) {
 const inputDir = path.join(__dirname, 'input');
 
 describe('Markdown Conversion Tests', () => {
-  test('should correctly convert and reconvert input markdown.md', () => {
+  test('should correctly convert and reconvert full combined markdown examples', () => {
     const fileName = 'input markdown.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -59,7 +59,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 1.md', () => {
+  test('should correctly convert and reconvert headers', () => {
     const fileName = 'input markdown copy 1.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -80,7 +80,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 2.md', () => {
+  test('should correctly convert and reconvert rich text formatting', () => {
     const fileName = 'input markdown copy 2.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -101,7 +101,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 3.md', () => {
+  test('should correctly convert and reconvert ordered lists', () => {
     const fileName = 'input markdown copy 3.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -122,7 +122,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 4.md', () => {
+  test('should correctly convert and reconvert bullet lists', () => {
     const fileName = 'input markdown copy 4.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -143,7 +143,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 5.md', () => {
+  test('should correctly convert and reconvert task lists', () => {
     const fileName = 'input markdown copy 5.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -164,7 +164,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 6.md', () => {
+  test('should correctly convert and reconvert escaped characters', () => {
     const fileName = 'input markdown copy 6.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -185,7 +185,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 7.md', () => {
+  test('should correctly convert and reconvert links', () => {
     const fileName = 'input markdown copy 7.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -206,7 +206,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 8.md', () => {
+  test('should correctly convert and reconvert images', () => {
     const fileName = 'input markdown copy 8.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -227,7 +227,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 9.md', () => {
+  test('should correctly convert and reconvert footnotes', () => {
     const fileName = 'input markdown copy 9.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -248,7 +248,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 10.md', () => {
+  test('should correctly convert and reconvert code blocks', () => {
     const fileName = 'input markdown copy 10.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -269,7 +269,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 11.md', () => {
+  test('should correctly convert and reconvert tables', () => {
     const fileName = 'input markdown copy 11.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -290,7 +290,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 12.md', () => {
+  test('should correctly convert and reconvert blockquotes', () => {
     const fileName = 'input markdown copy 12.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -311,7 +311,7 @@ describe('Markdown Conversion Tests', () => {
     expect(reconvertedMarkdown).toBe(originalMarkdown);
   });
 
-  test('should correctly convert and reconvert input markdown copy 13.md', () => {
+  test('should correctly convert and reconvert inline HTML', () => {
     const fileName = 'input markdown copy 13.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
