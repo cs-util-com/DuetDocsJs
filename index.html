@@ -208,7 +208,7 @@
         function sanitizeFilename(str) {
           return (
             (str || "untitled")
-              .replace(/[^\\w\\d\\s-]/g, "")
+              .replace(/[^\w\d\s-]/g, "")
               .trim()
               .slice(0, 50) || "untitled"
           );
@@ -377,7 +377,7 @@
         // ── Buttons ────────────────────────────────────────────────────────────
         document.getElementById("download-md").addEventListener("click", () => {
           const first =
-            mdEditor.value.split("\\n").find((l) => l.trim()) || "untitled";
+            mdEditor.value.split("\n").find((l) => l.trim()) || "untitled";
           download(mdEditor.value, sanitizeFilename(first) + ".md");
         });
 
@@ -397,7 +397,7 @@
 
         document.getElementById("download-html").addEventListener("click", () => {
           const text = quill.getText();
-          const first = text.split("\\n").find((l) => l.trim()) || "untitled";
+          const first = text.split("\n").find((l) => l.trim()) || "untitled";
           download(quill.root.innerHTML, sanitizeFilename(first) + ".html");
         });
 
