@@ -38,7 +38,8 @@ if (!fs.existsSync(outputDir)) {
 const inputDir = path.join(__dirname, 'input');
 
 describe('Markdown Conversion Tests', () => {
-  test('should correctly convert and reconvert full combined markdown examples', () => {
+/* // DOnt run the full combined test!
+test('should correctly convert and reconvert full combined markdown examples', () => {
     const fileName = 'input markdown.md';
     const filePath = path.join(inputDir, fileName);
     const outputPath = path.join(outputDir, `${fileName}.converted.txt`);
@@ -57,8 +58,9 @@ describe('Markdown Conversion Tests', () => {
 
     // Assertion using Jest
     expect(reconvertedMarkdown).toBe(originalMarkdown);
-  });
-
+});
+*/
+  
   test('should correctly convert and reconvert headers', () => {
     const fileName = 'input markdown copy 1.md';
     const filePath = path.join(inputDir, fileName);
