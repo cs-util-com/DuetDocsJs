@@ -48,93 +48,49 @@
     <title>${title}</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             line-height: 1.6;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            color: ${isDark ? '#e0e0e0' : '#333333'};
-            background-color: ${isDark ? '#1e1e1e' : '#ffffff'};
+            color: ${isDark ? '#e0e0e0' : '#333'};
+            background-color: ${isDark ? '#1e1e1e' : '#fff'};
         }
         
         /* Typography */
         h1, h2, h3, h4, h5, h6 {
-            color: ${isDark ? '#ffffff' : '#000000'};
-            margin-top: 1.5em;
-            margin-bottom: 0.5em;
-            font-weight: 600;
+            color: ${isDark ? '#fff' : '#000'};
+            margin: 1.5em 0 0.5em 0;
         }
         
-        h1 { font-size: 2em; }
-        h2 { font-size: 1.5em; }
-        h3 { font-size: 1.25em; }
-        h4 { font-size: 1.1em; }
-        h5 { font-size: 1em; }
-        h6 { font-size: 0.9em; }
-        
-        /* Text formatting */
-        strong, .ql-font-bold { font-weight: bold; }
-        em, .ql-font-italic { font-style: italic; }
-        u, .ql-underline { text-decoration: underline; }
-        s, .ql-strike { text-decoration: line-through; }
-        
-        /* Lists */
-        ul, ol {
-            padding-left: 1.5em;
-            margin: 1em 0;
+        /* Code */
+        code, pre {
+            font-family: "Monaco", "Consolas", monospace;
+            background-color: ${isDark ? '#374151' : '#f5f5f5'};
         }
         
-        li {
-            margin: 0.25em 0;
+        code {
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+        
+        pre {
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        
+        pre code {
+            background: transparent;
+            padding: 0;
         }
         
         /* Blockquotes */
         blockquote {
-            border-left: 4px solid ${isDark ? '#4b5563' : '#d1d5db'};
+            border-left: 4px solid ${isDark ? '#4b5563' : '#ddd'};
             margin: 1em 0;
             padding-left: 1em;
-            color: ${isDark ? '#a0a0a0' : '#666666'};
-            font-style: italic;
-        }
-        
-        /* Code */
-        code {
-            background-color: ${isDark ? '#374151' : '#f3f4f6'};
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
-            font-size: 0.9em;
-        }
-        
-        pre {
-            background-color: ${isDark ? '#374151' : '#f3f4f6'};
-            padding: 1em;
-            border-radius: 5px;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-        
-        pre code {
-            background-color: transparent;
-            padding: 0;
-        }
-        
-        /* Links */
-        a {
-            color: ${isDark ? '#60a5fa' : '#2563eb'};
-            text-decoration: none;
-        }
-        
-        a:hover {
-            text-decoration: underline;
-        }
-        
-        /* Images */
-        img {
-            max-width: 100%;
-            height: auto;
-            margin: 1em 0;
+            color: ${isDark ? '#a0a0a0' : '#666'};
         }
         
         /* Tables */
@@ -145,45 +101,34 @@
         }
         
         th, td {
-            border: 1px solid ${isDark ? '#4b5563' : '#d1d5db'};
+            border: 1px solid ${isDark ? '#4b5563' : '#ddd'};
             padding: 8px 12px;
             text-align: left;
         }
         
         th {
-            background-color: ${isDark ? '#374151' : '#f9fafb'};
+            background-color: ${isDark ? '#374151' : '#f9f9f9'};
             font-weight: bold;
         }
         
-        /* Text alignment classes */
+        /* Media */
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* Links */
+        a {
+            color: ${isDark ? '#60a5fa' : '#0066cc'};
+        }
+        
+        /* Alignment */
         .ql-align-center { text-align: center; }
         .ql-align-right { text-align: right; }
         .ql-align-justify { text-align: justify; }
         
-        /* Text size classes */
-        .ql-size-small { font-size: 0.8em; }
-        .ql-size-large { font-size: 1.2em; }
-        .ql-size-huge { font-size: 1.5em; }
-        
-        /* Indentation */
-        .ql-indent-1 { margin-left: 1.5em; }
-        .ql-indent-2 { margin-left: 3em; }
-        .ql-indent-3 { margin-left: 4.5em; }
-        .ql-indent-4 { margin-left: 6em; }
-        .ql-indent-5 { margin-left: 7.5em; }
-        .ql-indent-6 { margin-left: 9em; }
-        .ql-indent-7 { margin-left: 10.5em; }
-        .ql-indent-8 { margin-left: 12em; }
-        
-        /* Remove default margins on first/last elements */
-        *:first-child { margin-top: 0; }
-        *:last-child { margin-bottom: 0; }
-        
         @media print {
-            body {
-                color: #000;
-                background-color: #fff;
-            }
+            body { color: #000; background: #fff; }
         }
     </style>
 </head>
