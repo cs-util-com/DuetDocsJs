@@ -1,2 +1,0 @@
-**Bold Text**  
-**Also Bold**

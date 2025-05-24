@@ -1,1 +1,0 @@
-![Alt text for ref image](https://picsum.photos/id/10/200/100 "Optional Image Title")
