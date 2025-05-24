@@ -70,47 +70,6 @@
             return '';
           }).join('');
           return h(node, 'html', `<del>${value}</del>`);
-        },
-        li: (h, node) => {
-          // Handle task list items
-          if (node.children.length > 0) {
-            const firstChild = node.children[0];
-            
-            if (firstChild.type === 'element' && 
-                firstChild.tagName === 'input' && 
-                firstChild.properties && 
-                firstChild.properties.type === 'checkbox') {
-              
-              // Get remaining text content
-              const text = node.children
-                .slice(1)
-                .map(child => {
-                  if (child.type === 'text') return child.value;
-                  if (child.type === 'element') return h(child);
-                  return '';
-                })
-                .join('')
-                .trim();
-
-              // Generate the markdown checkbox
-              const checkbox = firstChild.properties.checked ? '[x]' : '[ ]';
-
-              // Create a paragraph with the checkbox followed by text
-              return h(node, 'listItem', {}, [
-                h(node, 'paragraph', [h(node, 'text', checkbox + ' ' + text)])
-              ]);
-            }
-          }
-
-          // Handle normal list items - Create paragraph node and text nodes properly
-          const children = node.children.map(child => {
-            if (child.type === 'text') {
-              return h(node, 'paragraph', [h(node, 'text', child.value)]);
-            }
-            return h(child);
-          });
-          
-          return h(node, 'listItem', {}, children);
         }
       }
     })
