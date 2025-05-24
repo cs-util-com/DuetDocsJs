@@ -57,18 +57,51 @@
   // HTML ➜ Markdown
   const htmlToMdProcessor = unified()
     .use(rehypeParse, { fragment: true })
-    .use(rehypeRemark)
+    .use(rehypeRemark, {
+      handlers: {
+        li: (h, node) => {
+          // Handle task list items
+          if (node.children.length > 0) {
+            const firstChild = node.children[0];
+            
+            if (firstChild.type === 'element' && 
+                firstChild.tagName === 'input' && 
+                firstChild.properties && 
+                firstChild.properties.type === 'checkbox') {
+              
+              // Get remaining text content
+              const text = node.children
+                .slice(1)
+                .map(child => {
+                  if (child.type === 'text') return child.value;
+                  if (child.type === 'element') return h(child);
+                  return '';
+                })
+                .join('')
+                .trim();
+
+              // Generate the markdown checkbox
+              const checkbox = firstChild.properties.checked ? '[x]' : '[ ]';
+
+              // Create a paragraph with the checkbox followed by text
+              return h(node, 'listItem', {}, [
+                h(node, 'paragraph', [h(node, 'text', checkbox + ' ' + text)])
+              ]);
+            }
+          }
+
+          // Handle normal list items
+          return h(node, 'listItem', {}, node.children.map(child => h(child)));
+        }
+      }
+    })
     .use(remarkStringify, {
-      listItemIndent: "one",
       bullet: "*",
-      fences: true,
+      listItemIndent: "one",
       rule: "-",
-      ruleSpaces: false,
-      emphasis: "*",
-      strong: "**",
-      quote: '"',
-      commonmark: true,
-      tightDefinitions: true
+      fences: true,
+      emphasis: "*", 
+      strong: "*"
     });
 
   /**
