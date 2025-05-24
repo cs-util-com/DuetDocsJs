@@ -105,6 +105,9 @@
     // Fix escaped task list brackets
     result = result.replace(/- \\(\[[x ]\])/g, '- $1');
     
+    // Fix escaped footnote brackets
+    result = result.replace(/\\(\[\^[^\]]+\])/g, '$1');
+    
     // Remove extra blank lines between consecutive headers
     result = result.replace(/^(#{1,6}[^\n]*)\n\n(?=#{1,6})/gm, '$1\n');
     
