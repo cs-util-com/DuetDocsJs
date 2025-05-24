@@ -58,7 +58,17 @@
   const htmlToMdProcessor = unified()
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark)
-    .use(remarkStringify);
+    .use(remarkStringify, {
+      listItemIndent: "one",
+      bullet: "*",
+      fences: true,
+      rule: "-",
+      ruleSpaces: false,
+      emphasis: "_",
+      strong: "**",
+      quote: ">",
+      quoteSingle: true
+    });
 
   /**
    * Convert Markdown to HTML

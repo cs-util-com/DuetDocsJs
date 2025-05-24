@@ -5,4 +5,4 @@ Escape \\*asterisks\\*
 <p>Escape \<em>asterisks\</em></p>
 
 --- RECONVERTED MARKDOWN ---
-Escape \\*asterisks\\*
+Escape \\_asterisks\\_
