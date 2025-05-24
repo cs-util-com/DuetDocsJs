@@ -90,13 +90,20 @@
             }
           }
 
-          // Handle normal list items
-          return h(node, 'listItem', {}, node.children.map(child => h(child)));
+          // Handle normal list items - Create paragraph node and text nodes properly
+          const children = node.children.map(child => {
+            if (child.type === 'text') {
+              return h(node, 'paragraph', [h(node, 'text', child.value)]);
+            }
+            return h(child);
+          });
+          
+          return h(node, 'listItem', {}, children);
         }
       }
     })
     .use(remarkStringify, {
-      bullet: "*",
+      bullet: "-",
       listItemIndent: "one",
       rule: "-",
       fences: true,
