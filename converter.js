@@ -80,7 +80,8 @@
       fences: true,
       emphasis: "*",
       strong: "*",
-      quote: '"' // Removed tightDefinitions: true
+      quote: '"',
+      tightDefinitions: true
     });
 
   /**
@@ -98,7 +99,12 @@
    * @returns {string}
    */
   function htmlToMarkdown(html) {
-    return htmlToMdProcessor.processSync(html).toString().trimEnd();
+    let result = htmlToMdProcessor.processSync(html).toString().trimEnd();
+    
+    // Fix escaped task list brackets
+    result = result.replace(/- \\(\[[x ]\])/g, '- $1');
+    
+    return result;
   }
 
   return { markdownToHtml, htmlToMarkdown };
