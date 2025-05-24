@@ -11,5 +11,4 @@
 
 --- RECONVERTED MARKDOWN ---
 [Ref link](https://example.org)
-
 [Inline](https://example.com)

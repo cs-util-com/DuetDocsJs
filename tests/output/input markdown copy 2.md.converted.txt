@@ -1,9 +1,9 @@
 --- ORIGINAL MARKDOWN ---
-*Italic* *Italic* 
-**Bold** **Bold** ***Bold Italic*** 
+*Italic* *Italic*
+**Bold** **Bold** ***Bold Italic***
 **Mix of *both***
-~~Strike~~ 
-@mention 
+~~Strike~~
+@mention
 <del>some html</del>
 
 --- CONVERTED HTML ---
@@ -15,4 +15,9 @@
 <del>some html</del></p>
 
 --- RECONVERTED MARKDOWN ---
-*Italic* *Italic* **Bold** **Bold** ***Bold Italic*** **Mix of *both*** ~~Strike~~ @mention <del>some html</del>
+*Italic* *Italic*
+**Bold** **Bold** ***Bold Italic***
+**Mix of *both***
+~~Strike~~
+@mention
+<del>some html</del>

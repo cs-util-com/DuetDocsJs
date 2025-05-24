@@ -100,7 +100,16 @@
    * @returns {string}
    */
   function htmlToMarkdown(html) {
-    let result = htmlToMdProcessor.processSync(html).toString().trimEnd();
+    // Pre-process HTML to preserve line breaks within paragraphs
+    // Split content with line breaks into separate paragraphs
+    let processedHtml = html.replace(/<p>(.*?)<\/p>/gs, (match, content) => {
+      // Split by newlines and create separate paragraphs for each non-empty line
+      const lines = content.split('\n').filter(line => line.trim());
+      if (lines.length <= 1) return match;
+      return lines.map(line => `<p>${line}</p>`).join('\n');
+    });
+    
+    let result = htmlToMdProcessor.processSync(processedHtml).toString().trimEnd();
     
     // Fix escaped task list brackets
     result = result.replace(/- \\(\[[x ]\])/g, '- $1');
@@ -108,11 +117,17 @@
     // Fix escaped footnote brackets
     result = result.replace(/\\(\[\^[^\]]+\])/g, '$1');
     
+    // Fix escaped strikethrough
+    result = result.replace(/\\(~~[^~]+~~)/g, '$1');
+    
     // Remove extra blank lines between consecutive headers
     result = result.replace(/^(#{1,6}[^\n]*)\n\n(?=#{1,6})/gm, '$1\n');
     
     // Remove extra blank lines between list items
     result = result.replace(/^([ ]*- [^\n]*)\n\n(?=[ ]*- )/gm, '$1\n');
+    
+    // Remove extra blank lines between paragraphs (convert double newlines to single)
+    result = result.replace(/\n\n+/g, '\n');
     
     return result;
   }
