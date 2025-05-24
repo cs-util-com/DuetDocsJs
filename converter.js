@@ -59,6 +59,10 @@
     .use(rehypeParse, { fragment: true })
     .use(rehypeRemark, {
       handlers: {
+        // Handle inline HTML elements by preserving them
+        kbd: (h, node) => {
+          return h(node, 'html', `<kbd>${node.children[0].value}</kbd>`);
+        },
         li: (h, node) => {
           // Handle task list items
           if (node.children.length > 0) {
@@ -107,8 +111,9 @@
       listItemIndent: "one",
       rule: "-",
       fences: true,
-      emphasis: "*", 
-      strong: "*"
+      emphasis: "*",
+      strong: "*",
+      quote: '"'
     });
 
   /**
