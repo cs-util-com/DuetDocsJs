@@ -8,9 +8,9 @@
 [some-ref1]: https://picsum.photos/64
 
 --- CONVERTED HTML ---
-<p><img src="https://picsum.photos/64" alt="Ref image" /></p>
-<p><img src="https://picsum.photos/100" alt="Inline image" /></p>
-<p><a href="https://youtu.be/dQw4w9WgXcQ"><img src="https://picsum.photos/120" alt="Clickable Image with a link" /></a></p>
+<p><img src="https://picsum.photos/64" alt="Ref image"></p>
+<p><img src="https://picsum.photos/100" alt="Inline image"></p>
+<p><a href="https://youtu.be/dQw4w9WgXcQ"><img src="https://picsum.photos/120" alt="Clickable Image with a link"></a></p>
 
 --- RECONVERTED MARKDOWN ---
 ![Ref image](https://picsum.photos/64)

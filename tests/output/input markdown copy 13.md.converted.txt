@@ -5,4 +5,4 @@ Inline HTML like <kbd>Ctrl</kbd> + <kbd>C</kbd> is possible
 <p>Inline HTML like <kbd>Ctrl</kbd> + <kbd>C</kbd> is possible</p>
 
 --- RECONVERTED MARKDOWN ---
-Inline HTML like Ctrl + C is possible
+Inline HTML like `Ctrl` + `C` is possible

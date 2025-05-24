@@ -1,18 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const showdown = require('showdown');
-const TurndownService = require('turndown');
-const turndown = new TurndownService();
-
-// Create simple converter functions for testing
-function markdownToHtml(markdown) {
-  const converter = new showdown.Converter();
-  return converter.makeHtml(markdown);
-}
-
-function htmlToMarkdown(html) {
-  return turndown.turndown(html);
-}
+const { markdownToHtml, htmlToMarkdown } = require('../converter.js');
 
 // Helper function to write output
 function writeOutput(outputPath, originalMarkdown, html, reconvertedMarkdown) {

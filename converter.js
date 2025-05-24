@@ -8,7 +8,7 @@
   if (typeof module === "object" && module.exports) {
     // Node / CommonJS
     module.exports = factory(
-      require("unified").unified || require("unified"),
+      require("unified"),
       require("remark-parse"),
       require("remark-stringify"),
       require("remark-rehype"),

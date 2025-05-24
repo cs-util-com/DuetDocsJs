@@ -6,13 +6,13 @@
 
 --- CONVERTED HTML ---
 <blockquote>
-  <p>Blockquote</p>
-  <blockquote>
-    <p>Nested Blockquote</p>
-  </blockquote>
+<p>Blockquote</p>
+<blockquote>
+<p>Nested Blockquote</p>
+</blockquote>
 </blockquote>
 
 --- RECONVERTED MARKDOWN ---
 > Blockquote
-> 
+>
 > > Nested Blockquote
