@@ -1,0 +1,16 @@
+--- ORIGINAL MARKDOWN ---
+`Inline code` and `code blocks`:
+
+```js
+console.log('Hi');
+```
+
+--- CONVERTED HTML ---
+<p><code>Inline code</code> and <code>code blocks</code>:</p>
+<pre><code class="js language-js">console.log('Hi');
+</code></pre>
+
+--- RECONVERTED MARKDOWN ---
+`Inline code` and `code blocks`:
+
+    console.log('Hi');

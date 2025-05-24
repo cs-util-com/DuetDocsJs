@@ -1,0 +1,16 @@
+--- ORIGINAL MARKDOWN ---
+* [ ] Task List Item is Open 
+* [x] Task List Item is Done
+* [ ] Task List Item is Open
+
+--- CONVERTED HTML ---
+<ul>
+<li>[ ] Task List Item is Open </li>
+<li>[x] Task List Item is Done</li>
+<li>[ ] Task List Item is Open</li>
+</ul>
+
+--- RECONVERTED MARKDOWN ---
+*   \[ \] Task List Item is Open
+*   \[x\] Task List Item is Done
+*   \[ \] Task List Item is Open

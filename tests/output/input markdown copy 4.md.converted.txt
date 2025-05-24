@@ -1,0 +1,19 @@
+--- ORIGINAL MARKDOWN ---
+* Bullet list item 1
+* Bullet list item 2
+- Also Bullet list item 3
+- Also Bullet list item 4
+
+--- CONVERTED HTML ---
+<ul>
+<li>Bullet list item 1</li>
+<li>Bullet list item 2</li>
+<li>Also Bullet list item 3</li>
+<li>Also Bullet list item 4</li>
+</ul>
+
+--- RECONVERTED MARKDOWN ---
+*   Bullet list item 1
+*   Bullet list item 2
+*   Also Bullet list item 3
+*   Also Bullet list item 4

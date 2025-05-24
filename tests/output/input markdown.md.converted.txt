@@ -1,0 +1,280 @@
+--- ORIGINAL MARKDOWN ---
+# Full combined Markdown Examples
+## Header 2
+### Header 3
+#### Header 4
+##### Header 5
+###### Header 6
+
+# Rich Text
+
+*Italic* *Italic* 
+**Bold** **Bold** ***Bold Italic*** 
+**Mix of *both***
+~~Strike~~ 
+@mention 
+<del>some html</del>
+
+# Lists
+
+#### Ordered
+
+1. Ordered   
+   1. Subordered 0
+   1. Sub ordered 1
+   1. Sub ordered 2
+      1. Sub Sub ordered 1
+2. Another
+    * Sub unordered
+        1. Sub ordered 1
+        1. Sub ordered 2
+
+#### Bullet
+
+* Bullet
+* Bullet
+- Also Bullet
+- Also Bullet
+
+#### Task List
+* [ ] Task Open 
+* [x] Task Done
+
+# Escape
+Escape \\*asterisks\\*
+
+# Links
+
+[Inline](https://example.com)
+
+[Ref link][ref]
+
+[http://example.org](http://example.org)
+
+[ref]: https://example.org
+
+# Images
+
+#### Inline: 
+![Cat](https://picsum.photos/100)
+
+#### Ref: 
+![Logo][logo]
+
+[logo]: https://picsum.photos/64
+
+#### Clickable Image with a link:
+[![Video](https://picsum.photos/120)](https://youtu.be/dQw4w9WgXcQ)
+
+# Footnotes
+
+Footnote here[^1] and inline footnote[^Quick note].
+
+[^1]: Footnote **supports** markdown.
+
+# Code
+
+`Inline code` and `code blocks`:
+
+```js
+console.log('Hi');
+```
+
+# Tables
+
+| Left | Center | Right |
+| :--- | :----: | ----: |
+| a    |    b   |     c |
+| d    |    e   |     f |
+
+# Blockquote
+
+> Quote
+>
+> > Nested
+
+# Inline HTML
+
+<kbd>Ctrl</kbd> + <kbd>C</kbd>
+
+--- CONVERTED HTML ---
+<h1 id="fullcombinedmarkdownexamples">Full combined Markdown Examples</h1>
+<h2 id="header2">Header 2</h2>
+<h3 id="header3">Header 3</h3>
+<h4 id="header4">Header 4</h4>
+<h5 id="header5">Header 5</h5>
+<h6 id="header6">Header 6</h6>
+<h1 id="richtext">Rich Text</h1>
+<p><em>Italic</em> <em>Italic</em> 
+<strong>Bold</strong> <strong>Bold</strong> <strong><em>Bold Italic</em></strong> 
+<strong>Mix of <em>both</strong></em>
+~~Strike~~ 
+@mention 
+<del>some html</del></p>
+<h1 id="lists">Lists</h1>
+<h4 id="ordered">Ordered</h4>
+<ol>
+<li>Ordered   </li>
+<li>Subordered 0</li>
+<li>Sub ordered 1</li>
+<li>Sub ordered 2<ol>
+<li>Sub Sub ordered 1</li></ol></li>
+<li>Another<ul>
+<li>Sub unordered<ol>
+<li>Sub ordered 1</li>
+<li>Sub ordered 2</li></ol></li></ul></li>
+</ol>
+<h4 id="bullet">Bullet</h4>
+<ul>
+<li>Bullet</li>
+<li>Bullet</li>
+<li>Also Bullet</li>
+<li>Also Bullet</li>
+</ul>
+<h4 id="tasklist">Task List</h4>
+<ul>
+<li>[ ] Task Open </li>
+<li>[x] Task Done</li>
+</ul>
+<h1 id="escape">Escape</h1>
+<p>Escape \<em>asterisks\</em></p>
+<h1 id="links">Links</h1>
+<p><a href="https://example.com">Inline</a></p>
+<p><a href="https://example.org">Ref link</a></p>
+<p><a href="http://example.org">http://example.org</a></p>
+<h1 id="images">Images</h1>
+<h4 id="inline">Inline:</h4>
+<p><img src="https://picsum.photos/100" alt="Cat" /></p>
+<h4 id="ref">Ref:</h4>
+<p><img src="https://picsum.photos/64" alt="Logo" /></p>
+<h4 id="clickableimagewithalink">Clickable Image with a link:</h4>
+<p><a href="https://youtu.be/dQw4w9WgXcQ"><img src="https://picsum.photos/120" alt="Video" /></a></p>
+<h1 id="footnotes">Footnotes</h1>
+<p>Footnote here[^1] and inline footnote[^Quick note].</p>
+<p>[^1]: Footnote <strong>supports</strong> markdown.</p>
+<h1 id="code">Code</h1>
+<p><code>Inline code</code> and <code>code blocks</code>:</p>
+<pre><code class="js language-js">console.log('Hi');
+</code></pre>
+<h1 id="tables">Tables</h1>
+<p>| Left | Center | Right |
+| :--- | :----: | ----: |
+| a    |    b   |     c |
+| d    |    e   |     f |</p>
+<h1 id="blockquote">Blockquote</h1>
+<blockquote>
+  <p>Quote</p>
+  <blockquote>
+    <p>Nested</p>
+  </blockquote>
+</blockquote>
+<h1 id="inlinehtml">Inline HTML</h1>
+<p><kbd>Ctrl</kbd> + <kbd>C</kbd></p>
+
+--- RECONVERTED MARKDOWN ---
+Full combined Markdown Examples
+===============================
+
+Header 2
+--------
+
+### Header 3
+
+#### Header 4
+
+##### Header 5
+
+###### Header 6
+
+Rich Text
+=========
+
+_Italic_ _Italic_ **Bold** **Bold** **_Bold Italic_** **Mix of _both_** ~~Strike~~ @mention some html
+
+Lists
+=====
+
+#### Ordered
+
+1.  Ordered
+2.  Subordered 0
+3.  Sub ordered 1
+4.  Sub ordered 2
+    1.  Sub Sub ordered 1
+5.  Another
+    *   Sub unordered
+        1.  Sub ordered 1
+        2.  Sub ordered 2
+
+#### Bullet
+
+*   Bullet
+*   Bullet
+*   Also Bullet
+*   Also Bullet
+
+#### Task List
+
+*   \[ \] Task Open
+*   \[x\] Task Done
+
+Escape
+======
+
+Escape \\_asterisks\\_
+
+Links
+=====
+
+[Inline](https://example.com)
+
+[Ref link](https://example.org)
+
+[http://example.org](http://example.org)
+
+Images
+======
+
+#### Inline:
+
+![Cat](https://picsum.photos/100)
+
+#### Ref:
+
+![Logo](https://picsum.photos/64)
+
+#### Clickable Image with a link:
+
+[![Video](https://picsum.photos/120)](https://youtu.be/dQw4w9WgXcQ)
+
+Footnotes
+=========
+
+Footnote here\[^1\] and inline footnote\[^Quick note\].
+
+\[^1\]: Footnote **supports** markdown.
+
+Code
+====
+
+`Inline code` and `code blocks`:
+
+    console.log('Hi');
+    
+
+Tables
+======
+
+| Left | Center | Right | | :--- | :----: | ----: | | a | b | c | | d | e | f |
+
+Blockquote
+==========
+
+> Quote
+> 
+> > Nested
+
+Inline HTML
+===========
+
+Ctrl + C

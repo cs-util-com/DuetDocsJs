@@ -1,0 +1,8 @@
+--- ORIGINAL MARKDOWN ---
+Inline HTML like <kbd>Ctrl</kbd> + <kbd>C</kbd> is possible
+
+--- CONVERTED HTML ---
+<p>Inline HTML like <kbd>Ctrl</kbd> + <kbd>C</kbd> is possible</p>
+
+--- RECONVERTED MARKDOWN ---
+Inline HTML like Ctrl + C is possible

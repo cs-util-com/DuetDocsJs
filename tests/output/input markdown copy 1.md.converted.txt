@@ -1,0 +1,30 @@
+--- ORIGINAL MARKDOWN ---
+# Header 1
+## Header 2
+### Header 3
+#### Header 4
+##### Header 5
+###### Header 6
+
+--- CONVERTED HTML ---
+<h1 id="header1">Header 1</h1>
+<h2 id="header2">Header 2</h2>
+<h3 id="header3">Header 3</h3>
+<h4 id="header4">Header 4</h4>
+<h5 id="header5">Header 5</h5>
+<h6 id="header6">Header 6</h6>
+
+--- RECONVERTED MARKDOWN ---
+Header 1
+========
+
+Header 2
+--------
+
+### Header 3
+
+#### Header 4
+
+##### Header 5
+
+###### Header 6

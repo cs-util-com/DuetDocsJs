@@ -1,0 +1,8 @@
+--- ORIGINAL MARKDOWN ---
+Escape \\*asterisks\\*
+
+--- CONVERTED HTML ---
+<p>Escape \<em>asterisks\</em></p>
+
+--- RECONVERTED MARKDOWN ---
+Escape \\_asterisks\\_
