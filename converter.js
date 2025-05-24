@@ -75,7 +75,7 @@
    * @returns {string}
    */
   function htmlToMarkdown(html) {
-    return htmlToMdProcessor.processSync(html).toString();
+    return htmlToMdProcessor.processSync(html).toString().trimEnd();
   }
 
   return { markdownToHtml, htmlToMarkdown };
