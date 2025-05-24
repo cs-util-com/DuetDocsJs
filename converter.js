@@ -1,64 +1,64 @@
-// converter.js — Lightweight HTML ⇄ Markdown converter
+// converter.js — Lightweight HTML ⇄ Markdown converter using unified/remark/rehype
 // Works in both browser and Node.js environments.
-// Dependencies: showdown, turndown, turndown-plugin-gfm
+// Dependencies (peer): unified, remark-parse, remark-stringify, remark-rehype,
+//                      rehype-parse, rehype-stringify, rehype-remark
 
 /* global window */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     // Node / CommonJS
     module.exports = factory(
-      require("showdown"),
-      require("turndown"),
-      require("turndown-plugin-gfm").gfm
+      require("unified").unified || require("unified"),
+      require("remark-parse"),
+      require("remark-stringify"),
+      require("remark-rehype"),
+      require("rehype-parse"),
+      require("rehype-stringify"),
+      require("rehype-remark")
     );
   } else {
     // Browser (UMD)
     root.converter = factory(
-      root.showdown,
-      root.TurndownService,
-      root.turndownPluginGfm && root.turndownPluginGfm.gfm
+      root.unified,
+      root.remarkParse,
+      root.remarkStringify,
+      root.remarkRehype,
+      root.rehypeParse,
+      root.rehypeStringify,
+      root.rehypeRemark
     );
   }
 })(typeof self !== "undefined" ? self : this, function (
-  Showdown,
-  TurndownService,
-  gfmPlugin
+  unified,
+  remarkParse,
+  remarkStringify,
+  remarkRehype,
+  rehypeParse,
+  rehypeStringify,
+  rehypeRemark
 ) {
-  if (!Showdown || !TurndownService) {
-    throw new Error("Showdown and Turndown must be loaded before converter.js");
+  // Guard against missing deps
+  if (!unified || !remarkParse || !remarkRehype || !rehypeRemark) {
+    throw new Error(
+      "Unified/remark/rehype libs must be loaded before converter.js"
+    );
   }
 
   // ────────────────────────────────────────────────────────────
-  // Showdown ➜ HTML
+  // Processors
   // ────────────────────────────────────────────────────────────
-  const showdownConverter = new Showdown.Converter({
-    tables: true,
-    strikethrough: true,
-    tasklists: true,
-    ghCodeBlocks: true,
-    parseImgDimensions: true,
-    ghCompatibleHeaderId: true,
-    requireSpaceBeforeHeadingText: true,
-  });
-  showdownConverter.setFlavor("github");
 
-  // ────────────────────────────────────────────────────────────
-  // Turndown ➜ Markdown
-  // ────────────────────────────────────────────────────────────
-  const turndownService = new TurndownService({
-    headingStyle: "atx",
-    bulletListMarker: "*",
-    codeBlockStyle: "fenced",
-  });
+  // Markdown ➜ HTML
+  const mdToHtmlProcessor = unified()
+    .use(remarkParse)
+    .use(remarkRehype, { allowDangerousHtml: true })
+    .use(rehypeStringify, { allowDangerousHtml: true });
 
-  if (gfmPlugin) turndownService.use(gfmPlugin);
-
-  // Minimal custom rules
-  turndownService.keep(["kbd"]); // preserve <kbd>
-  turndownService.addRule("del", {
-    filter: ["del", "s", "strike"],
-    replacement: (content) => `~~${content}~~`,
-  });
+  // HTML ➜ Markdown
+  const htmlToMdProcessor = unified()
+    .use(rehypeParse, { fragment: true })
+    .use(rehypeRemark)
+    .use(remarkStringify);
 
   /**
    * Convert Markdown to HTML
@@ -66,7 +66,7 @@
    * @returns {string}
    */
   function markdownToHtml(markdown) {
-    return showdownConverter.makeHtml(markdown);
+    return mdToHtmlProcessor.processSync(markdown).toString();
   }
 
   /**
@@ -75,7 +75,7 @@
    * @returns {string}
    */
   function htmlToMarkdown(html) {
-    return turndownService.turndown(html);
+    return htmlToMdProcessor.processSync(html).toString();
   }
 
   return { markdownToHtml, htmlToMarkdown };

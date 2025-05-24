@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dual Markdown ↔ Rich‑Text Editor (bug‑fixed)</title>
+    <title>Dual Markdown ↔ Rich-Text Editor</title>
     <!-- Favicon: Two panes -->
     <link
       rel="icon"
@@ -15,9 +15,7 @@
     <script>
       tailwind.config = {
         darkMode: "class",
-        theme: {
-          extend: {},
-        },
+        theme: { extend: {} },
       };
     </script>
     <!-- Quill CSS -->
@@ -122,7 +120,7 @@
       <div
         id="md-pane"
         class="flex flex-col h-full border-r border-gray-300 dark:border-gray-700"
-        style="flex-basis: 50%;" 
+        style="flex-basis: 50%;"
       >
         <div
           class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
@@ -150,8 +148,8 @@
       <!-- Draggable Handle -->
       <div id="drag-handle" class="bg-gray-300 dark:bg-gray-600 cursor-col-resize" style="flex-basis: 5px; flex-shrink: 0;"></div>
 
-      <!-- Rich‑Text Pane -->
-      <div id="rt-pane" class="flex flex-col h-full" style="flex-basis: 50%;"> 
+      <!-- Rich-Text Pane -->
+      <div id="rt-pane" class="flex flex-col h-full" style="flex-basis: 50%;">
         <!-- Header for Rich-Text Pane -->
         <div
           class="flex justify-between items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
@@ -174,57 +172,84 @@
       </div>
     </div>
 
-    <!-- Helper Libraries -->
+    <!-- Helper Libraries (classic scripts) -->
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-    
-    <!-- Our helper scripts - must come after the libraries they depend on -->
-    <script src="./converter.js"></script>
-    <script src="./html-export-helper.js"></script>
 
-    <!-- App Logic -->
+    <!-- Unified / remark / rehype + our app logic (ESM) -->
     <script type="module">
-      // Import functions from helper scripts through the global objects
+      /* ------------------------------------------------------------------
+       * 1. Pull the remark/rehype tool-chain straight from esm.sh.
+       *    They are attached to window so that UMD-style converter.js can
+       *    pick them up seamlessly.
+       * ------------------------------------------------------------------ */
+      import { unified } from "https://esm.sh/unified@11?bundle";
+      import remarkParse from "https://esm.sh/remark-parse@11?bundle";
+      import remarkStringify from "https://esm.sh/remark-stringify@11?bundle";
+      import remarkRehype from "https://esm.sh/remark-rehype@11?bundle";
+      import rehypeParse from "https://esm.sh/rehype-parse@9?bundle";
+      import rehypeStringify from "https://esm.sh/rehype-stringify@9?bundle";
+      import rehypeRemark from "https://esm.sh/rehype-remark@9?bundle";
+
+      // Expose for UMD converter.js
+      Object.assign(window, {
+        unified,
+        remarkParse,
+        remarkStringify,
+        remarkRehype,
+        rehypeParse,
+        rehypeStringify,
+        rehypeRemark,
+      });
+
+      /* ------------------------------------------------------------------
+       * 2. Dynamically load our helper scripts which rely on the globals.
+       * ------------------------------------------------------------------ */
+      await import("./converter.js");
+      await import("./html-export-helper.js");
+
       const { markdownToHtml, htmlToMarkdown } = window.converter;
       const { createCompleteHtmlDocument } = window.htmlExportHelper;
 
+      /* ------------------------------------------------------------------
+       * 3. Main Application Logic (mostly unchanged from the Showdown/
+       *    Turndown version, but stripped of the polling loader).
+       * ------------------------------------------------------------------ */
       function mainAppInitializer() {
-        // ── Theme & Persistence ────────────────────────────────────────────────
+        // ── Theme & Persistence ────────────────────────────────────────────
         const STORAGE_KEY = "duetDocsData";
 
-        // Two‑way sync guards
+        // Two-way sync guards
         let isUpdating = false;
         let activeEditor = "markdown";
         let lastEditTime = Date.now();
         const EDIT_TIMEOUT = 1000;
 
-        // ── Utility helpers ──────────────────────────────────────────────────────
+        // ── Utility helpers ────────────────────────────────────────────────
         const SPECIAL_CHARS_REGEX =
           /[\u202F\u200B\u2060\uFEFF\u00A0\u200C\u200D\u00AD\u180E\u200E\u200F\u202A\u202B\u202C\u202D\u202E]/g;
 
-        function containsSpecialCharacters(text) {
+        const containsSpecialCharacters = (text) => {
           SPECIAL_CHARS_REGEX.lastIndex = 0;
           return SPECIAL_CHARS_REGEX.test(text);
-        }
-        function sanitizeFilename(str) {
-          return (
-            (str || "untitled")
-              .replace(/[^\w\d\s-]/g, "")
-              .trim()
-              .slice(0, 50) || "untitled"
-          );
-        }
-        function showToast(message, duration = 2000) {
+        };
+        const sanitizeFilename = (str) =>
+          (str || "untitled")
+            .replace(/[^\w\d\s-]/g, "")
+            .trim()
+            .slice(0, 50) || "untitled";
+
+        const showToast = (message, duration = 2000) => {
           const t = document.getElementById("toast");
           t.textContent = message;
           t.classList.add("show");
           setTimeout(() => t.classList.remove("show"), duration);
-        }
-        function download(text, filename) {
-          // Determine MIME type based on file extension
-          const mimeType = filename.endsWith('.html') ? 'text/html;charset=utf-8' : 'text/plain;charset=utf-8';
+        };
+
+        const download = (text, filename) => {
+          const mimeType = filename.endsWith(".html")
+            ? "text/html;charset=utf-8"
+            : "text/plain;charset=utf-8";
           const blob = new Blob([text], { type: mimeType });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
@@ -233,24 +258,22 @@
           a.click();
           URL.revokeObjectURL(url);
           showToast(`Downloaded ${filename}`);
-        }
-        function cleanSpecialCharacters(text) {
-          const cleaned = text
-            .replace(SPECIAL_CHARS_REGEX, " ")
-            .replace(/ +/g, " ");
-          return cleaned;
-        }
+        };
+
+        const cleanSpecialCharacters = (text) =>
+          text.replace(SPECIAL_CHARS_REGEX, " ").replace(/ +/g, " ");
 
         // Load / save helpers
-        function loadFromStorage() {
+        const loadFromStorage = () => {
           try {
             const saved = localStorage.getItem(STORAGE_KEY);
             return saved ? JSON.parse(saved) : { markdown: "", theme: "light" };
           } catch (e) {
             return { markdown: "", theme: "light" };
           }
-        }
-        function saveToStorage(markdown) {
+        };
+
+        const saveToStorage = (markdown) => {
           try {
             const theme = document.documentElement.classList.contains("dark")
               ? "dark"
@@ -262,15 +285,13 @@
           } catch (e) {
             console.error("localStorage error", e);
           }
-        }
+        };
 
-        // ── Initialise state ────────────────────────────────────────────────────
+        // ── Initialise state ──────────────────────────────────────────────
         const savedData = loadFromStorage();
         if (savedData.theme === "dark") {
           document.documentElement.classList.add("dark");
-          document
-            .getElementById("theme-toggle")
-            .querySelector("span").textContent = "☀️";
+          document.querySelector("#theme-toggle span").textContent = "☀️";
         }
 
         const mdEditor = document.getElementById("md-editor");
@@ -294,16 +315,15 @@
           lastEditTime = Date.now();
         });
 
-        // Markdown → Rich‑text
+        // Markdown → Rich-text
         mdEditor.addEventListener("input", () => {
           if (isUpdating) return;
           activeEditor = "markdown";
           lastEditTime = Date.now();
           isUpdating = true;
-          // Use imported function
           const html = markdownToHtml(mdEditor.value);
           const hadFocus = document.activeElement === mdEditor;
-          quill.setContents([]); // Clear Quill before pasting
+          quill.setContents([]);
           quill.clipboard.dangerouslyPasteHTML(html);
           saveToStorage(mdEditor.value);
           updateCleanBtn();
@@ -353,15 +373,14 @@
 
         // Populate Quill if saved markdown exists
         if (savedData.markdown) {
-          quill.setContents([]); // Clear Quill before pasting
-          // Use imported function
+          quill.setContents([]);
           quill.clipboard.dangerouslyPasteHTML(
             markdownToHtml(savedData.markdown),
             "api"
           );
         }
 
-        // Rich‑text → Markdown (with bullet fix handled in converter.js)
+        // Rich-text → Markdown
         quill.on("text-change", (_, __, source) => {
           if (source !== "user" || isUpdating) return;
           activeEditor = "richtext";
@@ -372,65 +391,51 @@
           if (isEditingMarkdown) return;
           isUpdating = true;
           const html = quill.root.innerHTML;
-          // Use imported function (normalization happens inside)
           const md = htmlToMarkdown(html);
           mdEditor.value = md;
           saveToStorage(md);
           setTimeout(() => (isUpdating = false), 10);
         });
 
-        // ── Buttons ────────────────────────────────────────────────────────────
+        // ── Buttons ───────────────────────────────────────────────────────
         document.getElementById("download-md").addEventListener("click", () => {
-          const first =
-            mdEditor.value.split("\n").find((l) => l.trim()) || "untitled";
+          const first = mdEditor.value.split("\n").find((l) => l.trim()) || "untitled";
           download(mdEditor.value, sanitizeFilename(first) + ".md");
         });
 
-        document
-          .getElementById("clean-chars-md")
-          .addEventListener("click", () => {
-            const cleaned = cleanSpecialCharacters(mdEditor.value);
-            if (cleaned !== mdEditor.value) {
-              mdEditor.value = cleaned;
-              mdEditor.dispatchEvent(new Event("input", { bubbles: true }));
-              showToast("Special characters cleaned");
-            } else {
-              showToast("No special characters found");
-            }
-            updateCleanBtn();
-          });
+        document.getElementById("clean-chars-md").addEventListener("click", () => {
+          const cleaned = cleanSpecialCharacters(mdEditor.value);
+          if (cleaned !== mdEditor.value) {
+            mdEditor.value = cleaned;
+            mdEditor.dispatchEvent(new Event("input", { bubbles: true }));
+            showToast("Special characters cleaned");
+          } else {
+            showToast("No special characters found");
+          }
+          updateCleanBtn();
+        });
 
         document.getElementById("download-html").addEventListener("click", () => {
           const text = quill.getText();
           const first = text.split("\n").find((l) => l.trim()) || "untitled";
-          
-          // Use getSemanticHTML for clean output (Quill 2.0+)
-          let htmlContent;
-          if (typeof quill.getSemanticHTML === 'function') {
-            htmlContent = quill.getSemanticHTML();
-          } else {
-            // Fallback for older Quill versions
-            htmlContent = quill.root.innerHTML;
-          }
-          
-          // Get the current theme for proper styling
-          const isDark = document.documentElement.classList.contains('dark');
-          
-          // Create a complete HTML document with proper styling using helper function
+
+          const htmlContent = typeof quill.getSemanticHTML === "function"
+            ? quill.getSemanticHTML()
+            : quill.root.innerHTML;
+
+          const isDark = document.documentElement.classList.contains("dark");
           const completeHtml = createCompleteHtmlDocument(
-            htmlContent, 
+            htmlContent,
             sanitizeFilename(first),
             isDark
           );
-          
+
           download(completeHtml, sanitizeFilename(first) + ".html");
         });
 
         document.getElementById("theme-toggle").addEventListener("click", () => {
           const html = document.documentElement;
-          const icon = document
-            .getElementById("theme-toggle")
-            .querySelector("span");
+          const icon = document.querySelector("#theme-toggle span");
           if (html.classList.contains("dark")) {
             html.classList.remove("dark");
             icon.textContent = "🌙";
@@ -443,42 +448,34 @@
           saveToStorage(mdEditor.value);
         });
 
-        // ── Drag-to-Resize Logic ───────────────────────────────────────────────
-        const dragHandle = document.getElementById('drag-handle');
-        const editorWrapper = document.getElementById('editor-wrapper');
-        const mdPane = document.getElementById('md-pane');
-        const rtPane = document.getElementById('rt-pane');
+        // ── Drag-to-Resize Logic (unchanged) ─────────────────────────────
+        const dragHandle = document.getElementById("drag-handle");
+        const editorWrapper = document.getElementById("editor-wrapper");
+        const mdPane = document.getElementById("md-pane");
+        const rtPane = document.getElementById("rt-pane");
         let isDragging = false;
 
         const startDragging = (e) => {
           isDragging = true;
-          document.body.style.userSelect = 'none';
-          document.body.style.pointerEvents = 'none'; 
-          editorWrapper.style.cursor = window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
+          document.body.style.userSelect = "none";
+          document.body.style.pointerEvents = "none";
+          editorWrapper.style.cursor = window.innerWidth <= 768 ? "row-resize" : "col-resize";
 
-          document.addEventListener('mousemove', drag);
-          document.addEventListener('touchmove', drag, { passive: false });
-          document.addEventListener('mouseup', stopDragging);
-          document.addEventListener('touchend', stopDragging);
+          document.addEventListener("mousemove", drag);
+          document.addEventListener("touchmove", drag, { passive: false });
+          document.addEventListener("mouseup", stopDragging);
+          document.addEventListener("touchend", stopDragging);
         };
 
         const drag = (e) => {
           if (!isDragging) return;
-
-          if (e.type === 'touchmove') {
-              e.preventDefault();
-          }
-
+          if (e.type === "touchmove") e.preventDefault();
           const pointerX = e.clientX ?? e.touches?.[0]?.clientX;
           const pointerY = e.clientY ?? e.touches?.[0]?.clientY;
-
           if (pointerX === undefined || pointerY === undefined) return;
-
           const rect = editorWrapper.getBoundingClientRect();
           const isVertical = window.innerWidth <= 768;
-
           let firstPanePercent;
-
           if (isVertical) {
             const dragPos = pointerY - rect.top;
             const totalHeight = rect.height;
@@ -497,38 +494,24 @@
         const stopDragging = () => {
           if (!isDragging) return;
           isDragging = false;
-          document.body.style.userSelect = '';
-          document.body.style.pointerEvents = '';
-          editorWrapper.style.cursor = '';
-
-          document.removeEventListener('mousemove', drag);
-          document.removeEventListener('touchmove', drag);
-          document.removeEventListener('mouseup', stopDragging);
-          document.removeEventListener('touchend', stopDragging);
+          document.body.style.userSelect = "";
+          document.body.style.pointerEvents = "";
+          editorWrapper.style.cursor = "";
+          document.removeEventListener("mousemove", drag);
+          document.removeEventListener("touchmove", drag);
+          document.removeEventListener("mouseup", stopDragging);
+          document.removeEventListener("touchend", stopDragging);
         };
 
-        dragHandle.addEventListener('mousedown', startDragging);
-        dragHandle.addEventListener('touchstart', startDragging);
-
-        window.addEventListener('resize', () => {
-            dragHandle.style.cursor = window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
+        dragHandle.addEventListener("mousedown", startDragging);
+        dragHandle.addEventListener("touchstart", startDragging);
+        window.addEventListener("resize", () => {
+          dragHandle.style.cursor = window.innerWidth <= 768 ? "row-resize" : "col-resize";
         });
-        // ── End Drag-to-Resize Logic ───────────────────────────────────────────
-      } // End of mainAppInitializer
+      } // mainAppInitializer
 
-      function waitForLibrariesAndRun() {
-        if (window.showdown && window.TurndownService && window.Quill && window.converter && window.DOMPurify && window.htmlExportHelper) {
-          console.log("Libraries loaded, initializing app.");
-          mainAppInitializer();
-        } else {
-          console.log("Waiting for libraries...");
-          setTimeout(waitForLibrariesAndRun, 100); // Check again in 100ms
-        }
-      }
-
-      // Start the process
-      waitForLibrariesAndRun();
-
+      // ── Run the app ───────────────────────────────────────────────────
+      mainAppInitializer();
     </script>
   </body>
 </html>
