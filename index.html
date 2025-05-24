@@ -175,17 +175,20 @@
     </div>
 
     <!-- Helper Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/turndown@7.1.2/dist/turndown.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
     
-    <!-- Our converter script - must come after the libraries it depends on -->
+    <!-- Our helper scripts - must come after the libraries they depend on -->
     <script src="./converter.js"></script>
+    <script src="./html-export-helper.js"></script>
 
     <!-- App Logic -->
     <script type="module">
-      // Import functions from converter.js through the global converter object
+      // Import functions from helper scripts through the global objects
       const { markdownToHtml, htmlToMarkdown } = window.converter;
+      const { createCompleteHtmlDocument } = window.htmlExportHelper;
 
       function mainAppInitializer() {
         // ── Theme & Persistence ────────────────────────────────────────────────
@@ -400,7 +403,27 @@
         document.getElementById("download-html").addEventListener("click", () => {
           const text = quill.getText();
           const first = text.split("\n").find((l) => l.trim()) || "untitled";
-          download(quill.root.innerHTML, sanitizeFilename(first) + ".html");
+          
+          // Use getSemanticHTML for clean output (Quill 2.0+)
+          let htmlContent;
+          if (typeof quill.getSemanticHTML === 'function') {
+            htmlContent = quill.getSemanticHTML();
+          } else {
+            // Fallback for older Quill versions
+            htmlContent = quill.root.innerHTML;
+          }
+          
+          // Get the current theme for proper styling
+          const isDark = document.documentElement.classList.contains('dark');
+          
+          // Create a complete HTML document with proper styling using helper function
+          const completeHtml = createCompleteHtmlDocument(
+            htmlContent, 
+            sanitizeFilename(first),
+            isDark
+          );
+          
+          download(completeHtml, sanitizeFilename(first) + ".html");
         });
 
         document.getElementById("theme-toggle").addEventListener("click", () => {
@@ -494,7 +517,7 @@
       } // End of mainAppInitializer
 
       function waitForLibrariesAndRun() {
-        if (window.showdown && window.TurndownService && window.Quill && window.converter) {
+        if (window.showdown && window.TurndownService && window.Quill && window.converter && window.DOMPurify && window.htmlExportHelper) {
           console.log("Libraries loaded, initializing app.");
           mainAppInitializer();
         } else {

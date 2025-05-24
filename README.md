@@ -52,12 +52,21 @@ The core synchronization works as follows:
    │   └── .value = markdown ◀────────┘  Turndown◀──onTextChange── Quill
 ```
 
+### File Structure
+
+*   **`index.html`** — Main application file with UI and core logic
+*   **`converter.js`** — Markdown ⇄ HTML conversion utilities (Showdown + Turndown)
+*   **`html-export-helper.js`** — HTML export utilities for creating standalone documents
+
+### Sync Logic Details
+
 *   **Sync Guard:** A boolean flag (`isUpdating`) prevents infinite update loops between the panes. An `activeEditor` variable and `lastEditTime` timestamp help manage focus and prevent update collisions when switching panes quickly.
 *   **Conversion:**
     *   **Markdown → HTML:** Showdown handles the conversion, with options enabled for tables, strikethrough, and task lists.
     *   **HTML → Markdown:** Turndown converts the Quill editor's HTML back to Markdown.
 *   **Source of Truth:** The pane the user last interacted with is considered the source of truth for the content.
 *   **Persistence:** Content (`markdown`) and theme (`'light'` or `'dark'`) are saved to `localStorage` on every change and loaded when the page starts.
+*   **HTML Export:** Uses Quill's `getSemanticHTML()` API and creates complete, styled HTML documents with proper sanitization.
 
 ---
 
