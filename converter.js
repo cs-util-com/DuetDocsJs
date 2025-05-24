@@ -64,10 +64,11 @@
       fences: true,
       rule: "-",
       ruleSpaces: false,
-      emphasis: "_",
+      emphasis: "*",
       strong: "**",
-      quote: ">",
-      quoteSingle: true
+      quote: '"',
+      commonmark: true,
+      tightDefinitions: true
     });
 
   /**
