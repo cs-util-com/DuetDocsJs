@@ -1,0 +1,1 @@
+Inline HTML like <kbd>Ctrl</kbd> + <kbd>C</kbd> is possible
