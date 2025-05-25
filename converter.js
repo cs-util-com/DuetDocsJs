@@ -109,6 +109,14 @@
       return lines.map(line => `<p>${line}</p>`).join('\n');
     });
     
+    // Trim whitespace from table cells
+    processedHtml = processedHtml.replace(/<td[^>]*>(.*?)<\/td>/gs, (match, content) => {
+      return `<td>${content.trim()}</td>`;
+    });
+    processedHtml = processedHtml.replace(/<th[^>]*>(.*?)<\/th>/gs, (match, content) => {
+      return `<th>${content.trim()}</th>`;
+    });
+    
     let result = htmlToMdProcessor.processSync(processedHtml).toString().trimEnd();
     
     // Fix escaped task list brackets
