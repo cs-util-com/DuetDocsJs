@@ -1,16 +1,16 @@
 --- ORIGINAL MARKDOWN ---
-- [ ] Task List Item is Open
-- [x] Task List Item is Done
-- [ ] Task List Item is Open
+- [ ]  Task List Item is Open
+- [x]  Task List Item is Done
+- [ ]  Task List Item is Open
 
 --- CONVERTED HTML ---
 <ul>
-<li>[ ] Task List Item is Open</li>
-<li>[x] Task List Item is Done</li>
-<li>[ ] Task List Item is Open</li>
+<li class="task-list-item" style="list-style-type: none;"><input type="checkbox" disabled style="margin: 0px 0.35em 0.25em -1.6em; vertical-align: middle;">  Task List Item is Open</li>
+<li class="task-list-item" style="list-style-type: none;"><input type="checkbox" disabled style="margin: 0px 0.35em 0.25em -1.6em; vertical-align: middle;" checked>  Task List Item is Done</li>
+<li class="task-list-item" style="list-style-type: none;"><input type="checkbox" disabled style="margin: 0px 0.35em 0.25em -1.6em; vertical-align: middle;">  Task List Item is Open</li>
 </ul>
 
 --- RECONVERTED MARKDOWN ---
-- [ ] Task List Item is Open
-- [x] Task List Item is Done
-- [ ] Task List Item is Open
+* [ ]  Task List Item is Open
+* [x]  Task List Item is Done
+* [ ]  Task List Item is Open

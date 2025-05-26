@@ -1,5 +1,5 @@
-[Ref link][ref]
+[Ref link][1]
 
 [Inline](https://example.com)
 
-[ref]: https://example.org
+[1]: https://example.org

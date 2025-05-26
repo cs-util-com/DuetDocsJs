@@ -7,16 +7,13 @@
 --- CONVERTED HTML ---
 <ul>
 <li>Bullet list item 1</li>
-<li>Bullet list item 2
-<ul>
+<li>Bullet list item 2<ul>
 <li>Also Bullet list item 3</li>
-<li>Also Bullet list item 4</li>
-</ul>
-</li>
+<li>Also Bullet list item 4</li></ul></li>
 </ul>
 
 --- RECONVERTED MARKDOWN ---
-- Bullet list item 1
-- Bullet list item 2
-  - Also Bullet list item 3
-  - Also Bullet list item 4
+* Bullet list item 1
+* Bullet list item 2
+    * Also Bullet list item 3
+    * Also Bullet list item 4

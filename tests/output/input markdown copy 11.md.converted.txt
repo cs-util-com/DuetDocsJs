@@ -1,17 +1,34 @@
 --- ORIGINAL MARKDOWN ---
 | Table Column 1 | Table Column 2 | Table Column 3 |
 | :--- | :----: | ----: |
-| Table Item Colum 1 Line 1 | Table Item Colum 2 Line 1 | Table Item Colum 3 Line 1 |
-| Table Item Colum 1 Line 2 | Table Item Colum 2 Line 2 | Table Item Colum 3 Line 2 |
+| Table Item Colum 1 Line 1     | Table Item Colum 2 Line 1 | Table Item Colum 3 Line 1 |
+| Table Item Colum 1 Line 2     | Table Item Colum 2 Line 2 | Table Item Colum 3 Line 2 |
 
 --- CONVERTED HTML ---
-<p>| Table Column 1 | Table Column 2 | Table Column 3 |
-| :--- | :----: | ----: |
-| Table Item Colum 1 Line 1 | Table Item Colum 2 Line 1 | Table Item Colum 3 Line 1 |
-| Table Item Colum 1 Line 2 | Table Item Colum 2 Line 2 | Table Item Colum 3 Line 2 |</p>
+<table>
+<thead>
+<tr>
+<th id="table_column_1" style="text-align:left;">Table Column 1</th>
+<th id="table_column_2" style="text-align:center;">Table Column 2</th>
+<th id="table_column_3" style="text-align:right;">Table Column 3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">Table Item Colum 1 Line 1</td>
+<td style="text-align:center;">Table Item Colum 2 Line 1</td>
+<td style="text-align:right;">Table Item Colum 3 Line 1</td>
+</tr>
+<tr>
+<td style="text-align:left;">Table Item Colum 1 Line 2</td>
+<td style="text-align:center;">Table Item Colum 2 Line 2</td>
+<td style="text-align:right;">Table Item Colum 3 Line 2</td>
+</tr>
+</tbody>
+</table>
 
 --- RECONVERTED MARKDOWN ---
 | Table Column 1 | Table Column 2 | Table Column 3 |
 | :--- | :----: | ----: |
-| Table Item Colum 1 Line 1 | Table Item Colum 2 Line 1 | Table Item Colum 3 Line 1 |
-| Table Item Colum 1 Line 2 | Table Item Colum 2 Line 2 | Table Item Colum 3 Line 2 |
+| Table Item Colum 1 Line 1     | Table Item Colum 2 Line 1 | Table Item Colum 3 Line 1 |
+| Table Item Colum 1 Line 2     | Table Item Colum 2 Line 2 | Table Item Colum 3 Line 2 |

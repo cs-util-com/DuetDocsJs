@@ -1,14 +1,18 @@
 --- ORIGINAL MARKDOWN ---
-[Ref link][ref]
+[Ref link][1]
 
 [Inline](https://example.com)
 
-[ref]: https://example.org
+[1]: https://example.org
 
 --- CONVERTED HTML ---
 <p><a href="https://example.org">Ref link</a></p>
 <p><a href="https://example.com">Inline</a></p>
 
 --- RECONVERTED MARKDOWN ---
-[Ref link](https://example.org)
-[Inline](https://example.com)
+[Ref link][1]
+
+[Inline][2]
+
+[1]: https://example.org
+[2]: https://example.com
