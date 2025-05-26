@@ -1,9 +1,9 @@
 --- ORIGINAL MARKDOWN ---
-Footnote here[^1] and inline footnote[^Quick note].
+Footnote here[^1] and inline footnote[^Quick note].  
 [^1]: Footnote **supports** markdown.
 
 --- CONVERTED HTML ---
-<p>Footnote here[^1] and inline footnote[^Quick note].<br />
+<p>Footnote here[^1] and inline footnote[^Quick note].  <br />
 [^1]: Footnote <strong>supports</strong> markdown.</p>
 
 --- RECONVERTED MARKDOWN ---

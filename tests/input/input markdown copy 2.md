@@ -1,6 +1,5 @@
-*Italic* *Italic*
-**Bold** **Bold** ***Bold Italic***
-**Mix of *both***
-~~Strike~~
-@mention
+*Italic* *Italic*  
+**Bold** **Bold** ***Bold Italic***  
+**Mix of *both***  
+~~Strike~~  
 <del>some html</del>
