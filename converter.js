@@ -56,7 +56,7 @@
     codeBlockStyle: "fenced",
     emDelimiter: "*", 
     strongDelimiter: "**",
-    linkStyle: "referenced" // Attempt to preserve reference-style links
+    linkStyle: "inlined" // Use inline style for consistent behavior
   });
 
   if (gfmPlugin) {

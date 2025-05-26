@@ -10,9 +10,6 @@
 <p><a href="https://example.com">Inline</a></p>
 
 --- RECONVERTED MARKDOWN ---
-[Ref link][1]
+[Ref link](https://example.org)
 
-[Inline][2]
-
-[1]: https://example.org
-[2]: https://example.com
+[Inline](https://example.com)
