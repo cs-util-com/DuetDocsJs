@@ -1,7 +1,7 @@
 --- ORIGINAL MARKDOWN ---
 [Inline](https://example.com)
 
-[Link 2] (https://example.org)
+[Link 2](https://example.org)
 
 --- CONVERTED HTML ---
 <p><a href="https://example.com">Inline</a></p>
