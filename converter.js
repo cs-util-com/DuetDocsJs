@@ -52,7 +52,7 @@
   // ────────────────────────────────────────────────────────────
   const turndownService = new TurndownService({
     headingStyle: "atx",
-    bulletListMarker: "*",
+    bulletListMarker: "-",
     codeBlockStyle: "fenced",
     emDelimiter: "*", 
     strongDelimiter: "**",
