@@ -17,4 +17,4 @@
 **Bold** **Bold** ***Bold Italic***  
 **Mix of *both***  
 ~~Strike~~  
-~~some html~~
+<del>some html</del>

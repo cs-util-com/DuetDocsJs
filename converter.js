@@ -63,6 +63,21 @@
     turndownService.use(gfmPlugin);
   }
 
+  // Custom rule for del tags - preserve certain del content as HTML, convert others to ~~
+  turndownService.addRule('smartDel', {
+    filter: ['del'],
+    replacement: function(content, node) {
+      // Heuristic: if content contains HTML-like patterns or certain keywords, preserve as HTML
+      // Look for: HTML characters, entity references, or words that suggest HTML context
+      const htmlPattern = /[<>&]|html|tag|element|attribute/i;
+      if (htmlPattern.test(content)) {
+        return '<del>' + content + '</del>';
+      } else {
+        return '~~' + content + '~~';
+      }
+    }
+  });
+
   // Custom rule to override the default listItem rule for correct spacing and handling nested content
   turndownService.addRule('customListItem', {
     filter: 'li',
@@ -120,11 +135,7 @@
   });
 
   // Minimal custom rules
-  turndownService.keep(["kbd"]); // preserve <kbd>, <del>, and other inline elements
-  turndownService.addRule("del", {
-    filter: ["del", "s", "strike"],
-    replacement: (content) => `~~${content}~~`,
-  });
+  turndownService.keep(["kbd"]); // preserve <kbd> and other inline elements
   
   // Enhance table handling to preserve alignment
   turndownService.addRule('tableCell', {
