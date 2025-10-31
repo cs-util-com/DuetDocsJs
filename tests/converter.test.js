@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { markdownToHtml, htmlToMarkdown } = require('../converter.js');
+const { markdownToHtml, htmlToMarkdown } = require('../src/converter.js');
 
 // Helper function to write output
 function writeOutput(outputPath, originalMarkdown, html, reconvertedMarkdown) {

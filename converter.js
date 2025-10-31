@@ -2,7 +2,6 @@
 // Works in both browser and Node.js environments.
 // Dependencies: showdown, turndown, turndown-plugin-gfm
 
-/* global window */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     // Node / CommonJS
@@ -66,7 +65,7 @@
   // Custom rule for del tags - preserve certain del content as HTML, convert others to ~~
   turndownService.addRule('smartDel', {
     filter: ['del'],
-    replacement: function(content, node) {
+    replacement: function(content) {
       // Heuristic: if content contains HTML-like patterns or certain keywords, preserve as HTML
       // Look for: HTML characters, entity references, or words that suggest HTML context
       const htmlPattern = /[<>&]|html|tag|element|attribute/i;
@@ -163,65 +162,65 @@
   turndownService.addRule('tableWithAlignment', {
     filter: 'table',
     replacement: function (content, node) {
-      if (!content.trim()) {
-        return '';
-      }
+      if (!content.trim()) return '';
 
-      const headers = Array.from(node.querySelectorAll('thead th'));
-      let headerLine = '';
-      let alignmentRow = '';
-
-      if (headers.length > 0) {
-        headerLine = '| ' + headers.map(th => th.textContent.trim()).join(' | ') + ' |';
-        
-        alignmentRow = '|';
+      // helpers
+      function buildHeaderAlignment(headers) {
+        if (!headers.length) return { headerLine: '', alignmentRow: '' };
+        const headerLine = '| ' + headers.map(th => th.textContent.trim()).join(' | ') + ' |';
+        let alignmentRow = '|';
         for (const header of headers) {
           const align = header.style.textAlign || getComputedStyle(header).textAlign;
           let marker;
           switch (align) {
-            case 'left':  marker = ' :--- '; break;
-            case 'center':marker = ' :----: '; break;
+            case 'left': marker = ' :--- '; break;
+            case 'center': marker = ' :----: '; break;
             case 'right': marker = ' ----: '; break;
-            default:      marker = ' --- '; break; 
+            default: marker = ' --- '; break;
           }
           alignmentRow += marker + '|';
         }
+        return { headerLine, alignmentRow };
       }
 
-      let bodyLines = [];
+      function buildBodyLines(rows, headers) {
+        const bodyLines = [];
+        rows.forEach(row => {
+          const cells = Array.from(row.querySelectorAll('td'));
+          const rowLine = '| ' + cells.map((cell, idx) => {
+            const content = cell.textContent.trim();
+            const align = cell.style.textAlign || getComputedStyle(cell).textAlign;
+            if (align === 'center') {
+              const totalWidth = headers[idx] ? headers[idx].textContent.trim().length : content.length;
+              const padding = Math.max(totalWidth - content.length, 0);
+              const leftPad = Math.floor(padding / 2);
+              const rightPad = padding - leftPad;
+              return ' '.repeat(leftPad) + content + ' '.repeat(rightPad);
+            } else if (align === 'right') {
+              const totalWidth = headers[idx] ? headers[idx].textContent.trim().length : content.length;
+              const padding = Math.max(totalWidth - content.length, 0);
+              return ' '.repeat(padding) + content;
+            }
+            return content + ' '.repeat(4);
+          }).join(' | ') + ' |';
+          bodyLines.push(rowLine);
+        });
+        return bodyLines;
+      }
+
+      const headers = Array.from(node.querySelectorAll('thead th'));
+      let { headerLine, alignmentRow } = buildHeaderAlignment(headers);
       const rows = Array.from(node.querySelectorAll('tbody tr'));
-      rows.forEach(row => {
-        const cells = Array.from(row.querySelectorAll('td'));
-        const rowLine = '| ' + cells.map((cell, idx) => {
-          const content = cell.textContent.trim();
-          const align = cell.style.textAlign || getComputedStyle(cell).textAlign;
-          
-          // Apply padding based on alignment
-          if (align === 'center') {
-            const totalWidth = headers[idx] ? headers[idx].textContent.trim().length : content.length;
-            const padding = Math.max(totalWidth - content.length, 0);
-            const leftPad = Math.floor(padding / 2);
-            const rightPad = padding - leftPad;
-            return ' '.repeat(leftPad) + content + ' '.repeat(rightPad);
-          } else if (align === 'right') {
-            const totalWidth = headers[idx] ? headers[idx].textContent.trim().length : content.length;
-            const padding = Math.max(totalWidth - content.length, 0);
-            return ' '.repeat(padding) + content;
-          } else { // left alignment
-            return content + ' '.repeat(4); // Add some padding on right for left-aligned
-          }
-        }).join(' | ') + ' |';
-        bodyLines.push(rowLine);
-      });
-      
-      if (!headerLine && rows.length > 0) { // Handle tables without <thead>
+      const bodyLines = buildBodyLines(rows, headers);
+
+      if (!headerLine && rows.length > 0) {
         const firstRowCells = Array.from(rows[0].querySelectorAll('td'));
         if (firstRowCells.length > 0) {
-            headerLine = '| ' + firstRowCells.map(cell => cell.textContent.trim()).join(' | ') + ' |';
-            alignmentRow = '| ' + firstRowCells.map(() => '---').join(' | ') + ' |';
-            bodyLines.shift(); 
+          headerLine = '| ' + firstRowCells.map(cell => cell.textContent.trim()).join(' | ') + ' |';
+          alignmentRow = '| ' + firstRowCells.map(() => '---').join(' | ') + ' |';
+          bodyLines.shift();
         } else {
-            return ''; 
+          return '';
         }
       } else if (!headerLine && rows.length === 0) {
         return '';

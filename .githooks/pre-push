@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+# Block pushes unless the full test suite passes.
+
+set -eu
+
+echo "🧪 Running npm test before push..."
+npm test --silent || {
+  echo "❌ npm test failed; push aborted."
+  exit 1
+}
+
+echo "✅ npm test passed; proceeding with push."
