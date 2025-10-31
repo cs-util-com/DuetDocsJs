@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="light">
   <head>
     <meta charset="UTF-8" />
@@ -14,7 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: "class",
+        darkMode: 'class',
         theme: { extend: {} },
       };
     </script>
@@ -89,7 +89,8 @@
           flex-direction: column;
         }
 
-        #editor-wrapper > div:not(#drag-handle) { /* Target panes, not handle */
+        #editor-wrapper > div:not(#drag-handle) {
+          /* Target panes, not handle */
           width: 100% !important;
           height: auto !important; /* Let flex-basis control height */
           flex-basis: 50%; /* Reset basis for vertical */
@@ -99,7 +100,7 @@
           overflow: hidden; /* Hide overflow from the pane itself */
         }
         html.dark #editor-wrapper > div:not(#drag-handle) {
-           border-bottom-color: #4b5563; /* Dark mode border */
+          border-bottom-color: #4b5563; /* Dark mode border */
         }
 
         #drag-handle {
@@ -120,7 +121,7 @@
       <div
         id="md-pane"
         class="flex flex-col h-full border-r border-gray-300 dark:border-gray-700"
-        style="flex-basis: 50%;"
+        style="flex-basis: 50%"
       >
         <div
           class="flex gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
@@ -146,10 +147,14 @@
       </div>
 
       <!-- Draggable Handle -->
-      <div id="drag-handle" class="bg-gray-300 dark:bg-gray-600 cursor-col-resize" style="flex-basis: 5px; flex-shrink: 0;"></div>
+      <div
+        id="drag-handle"
+        class="bg-gray-300 dark:bg-gray-600 cursor-col-resize"
+        style="flex-basis: 5px; flex-shrink: 0"
+      ></div>
 
       <!-- Rich-Text Pane -->
-      <div id="rt-pane" class="flex flex-col h-full" style="flex-basis: 50%;">
+      <div id="rt-pane" class="flex flex-col h-full" style="flex-basis: 50%">
         <!-- Header for Rich-Text Pane -->
         <div
           class="flex justify-between items-center gap-2 p-2 border-b border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
@@ -185,8 +190,8 @@
        * Dynamically load our helper scripts which rely on the globals
        * (Showdown, Turndown, DOMPurify, Quill) being loaded above.
        * ------------------------------------------------------------------ */
-      await import("./converter.js");
-      await import("./html-export-helper.js");
+      await import('./converter.js');
+      await import('./html-export-helper.js');
 
       const { markdownToHtml, htmlToMarkdown } = window.converter;
       const { createCompleteHtmlDocument } = window.htmlExportHelper;
@@ -197,11 +202,11 @@
        * ------------------------------------------------------------------ */
       function mainAppInitializer() {
         // ── Theme & Persistence ────────────────────────────────────────────
-        const STORAGE_KEY = "duetDocsData";
+        const STORAGE_KEY = 'duetDocsData';
 
         // Two-way sync guards
         let isUpdating = false;
-        let activeEditor = "markdown";
+        let activeEditor = 'markdown';
         let lastEditTime = Date.now();
         const EDIT_TIMEOUT = 1000;
 
@@ -214,25 +219,25 @@
           return SPECIAL_CHARS_REGEX.test(text);
         };
         const sanitizeFilename = (str) =>
-          (str || "untitled")
-            .replace(/[^\w\d\s-]/g, "")
+          (str || 'untitled')
+            .replace(/[^\w\d\s-]/g, '')
             .trim()
-            .slice(0, 50) || "untitled";
+            .slice(0, 50) || 'untitled';
 
         const showToast = (message, duration = 2000) => {
-          const t = document.getElementById("toast");
+          const t = document.getElementById('toast');
           t.textContent = message;
-          t.classList.add("show");
-          setTimeout(() => t.classList.remove("show"), duration);
+          t.classList.add('show');
+          setTimeout(() => t.classList.remove('show'), duration);
         };
 
         const download = (text, filename) => {
-          const mimeType = filename.endsWith(".html")
-            ? "text/html;charset=utf-8"
-            : "text/plain;charset=utf-8";
+          const mimeType = filename.endsWith('.html')
+            ? 'text/html;charset=utf-8'
+            : 'text/plain;charset=utf-8';
           const blob = new Blob([text], { type: mimeType });
           const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
+          const a = document.createElement('a');
           a.href = url;
           a.download = filename;
           a.click();
@@ -241,64 +246,64 @@
         };
 
         const cleanSpecialCharacters = (text) =>
-          text.replace(SPECIAL_CHARS_REGEX, " ").replace(/ +/g, " ");
+          text.replace(SPECIAL_CHARS_REGEX, ' ').replace(/ +/g, ' ');
 
         // Load / save helpers
         const loadFromStorage = () => {
           try {
             const saved = localStorage.getItem(STORAGE_KEY);
-            return saved ? JSON.parse(saved) : { markdown: "", theme: "light" };
+            return saved ? JSON.parse(saved) : { markdown: '', theme: 'light' };
           } catch (e) {
-            return { markdown: "", theme: "light" };
+            return { markdown: '', theme: 'light' };
           }
         };
 
         const saveToStorage = (markdown) => {
           try {
-            const theme = document.documentElement.classList.contains("dark")
-              ? "dark"
-              : "light";
+            const theme = document.documentElement.classList.contains('dark')
+              ? 'dark'
+              : 'light';
             localStorage.setItem(
               STORAGE_KEY,
               JSON.stringify({ markdown, theme })
             );
           } catch (e) {
-            console.error("localStorage error", e);
+            console.error('localStorage error', e);
           }
         };
 
         // ── Initialise state ──────────────────────────────────────────────
         const savedData = loadFromStorage();
-        if (savedData.theme === "dark") {
-          document.documentElement.classList.add("dark");
-          document.querySelector("#theme-toggle span").textContent = "☀️";
+        if (savedData.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+          document.querySelector('#theme-toggle span').textContent = '☀️';
         }
 
-        const mdEditor = document.getElementById("md-editor");
-        mdEditor.value = savedData.markdown || "";
+        const mdEditor = document.getElementById('md-editor');
+        mdEditor.value = savedData.markdown || '';
 
         const updateCleanBtn = () => {
-          const btn = document.getElementById("clean-chars-md");
+          const btn = document.getElementById('clean-chars-md');
           btn.style.display = containsSpecialCharacters(mdEditor.value)
-            ? "inline-block"
-            : "none";
+            ? 'inline-block'
+            : 'none';
         };
         updateCleanBtn();
 
         // Track focus for sync logic
-        mdEditor.addEventListener("focus", () => {
-          activeEditor = "markdown";
+        mdEditor.addEventListener('focus', () => {
+          activeEditor = 'markdown';
           lastEditTime = Date.now();
         });
-        mdEditor.addEventListener("click", () => {
-          activeEditor = "markdown";
+        mdEditor.addEventListener('click', () => {
+          activeEditor = 'markdown';
           lastEditTime = Date.now();
         });
 
         // Markdown → Rich-text
-        mdEditor.addEventListener("input", () => {
+        mdEditor.addEventListener('input', () => {
           if (isUpdating) return;
-          activeEditor = "markdown";
+          activeEditor = 'markdown';
           lastEditTime = Date.now();
           isUpdating = true;
           const html = markdownToHtml(mdEditor.value);
@@ -321,33 +326,33 @@
         const toolbarOptions = [
           [{ header: [1, 2, 3, 4, 5, 6, false] }],
           [{ font: [] }],
-          ["bold", "italic", "underline", "strike"],
-          ["blockquote", "code-block"],
-          [{ list: "ordered" }, { list: "bullet" }],
-          [{ script: "sub" }, { script: "super" }],
-          [{ indent: "-1" }, { indent: "+1" }],
-          [{ direction: "rtl" }],
-          [{ size: ["small", false, "large", "huge"] }],
+          ['bold', 'italic', 'underline', 'strike'],
+          ['blockquote', 'code-block'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          [{ script: 'sub' }, { script: 'super' }],
+          [{ indent: '-1' }, { indent: '+1' }],
+          [{ direction: 'rtl' }],
+          [{ size: ['small', false, 'large', 'huge'] }],
           [{ color: [] }, { background: [] }],
           [{ align: [] }],
-          ["link", "image", "video"],
-          ["clean"],
+          ['link', 'image', 'video'],
+          ['clean'],
         ];
-        const quill = new Quill("#rt-editor", {
+        const quill = new Quill('#rt-editor', {
           modules: { toolbar: toolbarOptions },
-          theme: "snow",
+          theme: 'snow',
         });
 
         document
-          .querySelector("#rt-editor .ql-editor")
-          .addEventListener("focus", () => {
-            activeEditor = "richtext";
+          .querySelector('#rt-editor .ql-editor')
+          .addEventListener('focus', () => {
+            activeEditor = 'richtext';
             lastEditTime = Date.now();
           });
         document
-          .querySelector("#rt-editor .ql-editor")
-          .addEventListener("mousedown", () => {
-            activeEditor = "richtext";
+          .querySelector('#rt-editor .ql-editor')
+          .addEventListener('mousedown', () => {
+            activeEditor = 'richtext';
             lastEditTime = Date.now();
           });
 
@@ -356,17 +361,17 @@
           quill.setContents([]);
           quill.clipboard.dangerouslyPasteHTML(
             markdownToHtml(savedData.markdown),
-            "api"
+            'api'
           );
         }
 
         // Rich-text → Markdown
-        quill.on("text-change", (_, __, source) => {
-          if (source !== "user" || isUpdating) return;
-          activeEditor = "richtext";
+        quill.on('text-change', (_, __, source) => {
+          if (source !== 'user' || isUpdating) return;
+          activeEditor = 'richtext';
           lastEditTime = Date.now();
           const isEditingMarkdown =
-            activeEditor === "markdown" &&
+            activeEditor === 'markdown' &&
             Date.now() - lastEditTime < EDIT_TIMEOUT;
           if (isEditingMarkdown) return;
           isUpdating = true;
@@ -378,78 +383,87 @@
         });
 
         // ── Buttons ───────────────────────────────────────────────────────
-        document.getElementById("download-md").addEventListener("click", () => {
-          const first = mdEditor.value.split("\n").find((l) => l.trim()) || "untitled";
-          download(mdEditor.value, sanitizeFilename(first) + ".md");
+        document.getElementById('download-md').addEventListener('click', () => {
+          const first =
+            mdEditor.value.split('\n').find((l) => l.trim()) || 'untitled';
+          download(mdEditor.value, sanitizeFilename(first) + '.md');
         });
 
-        document.getElementById("clean-chars-md").addEventListener("click", () => {
-          const cleaned = cleanSpecialCharacters(mdEditor.value);
-          if (cleaned !== mdEditor.value) {
-            mdEditor.value = cleaned;
-            mdEditor.dispatchEvent(new Event("input", { bubbles: true }));
-            showToast("Special characters cleaned");
-          } else {
-            showToast("No special characters found");
-          }
-          updateCleanBtn();
-        });
+        document
+          .getElementById('clean-chars-md')
+          .addEventListener('click', () => {
+            const cleaned = cleanSpecialCharacters(mdEditor.value);
+            if (cleaned !== mdEditor.value) {
+              mdEditor.value = cleaned;
+              mdEditor.dispatchEvent(new Event('input', { bubbles: true }));
+              showToast('Special characters cleaned');
+            } else {
+              showToast('No special characters found');
+            }
+            updateCleanBtn();
+          });
 
-        document.getElementById("download-html").addEventListener("click", () => {
-          const text = quill.getText();
-          const first = text.split("\n").find((l) => l.trim()) || "untitled";
+        document
+          .getElementById('download-html')
+          .addEventListener('click', () => {
+            const text = quill.getText();
+            const first = text.split('\n').find((l) => l.trim()) || 'untitled';
 
-          const htmlContent = typeof quill.getSemanticHTML === "function"
-            ? quill.getSemanticHTML()
-            : quill.root.innerHTML;
+            const htmlContent =
+              typeof quill.getSemanticHTML === 'function'
+                ? quill.getSemanticHTML()
+                : quill.root.innerHTML;
 
-          const isDark = document.documentElement.classList.contains("dark");
-          const completeHtml = createCompleteHtmlDocument(
-            htmlContent,
-            sanitizeFilename(first),
-            isDark
-          );
+            const isDark = document.documentElement.classList.contains('dark');
+            const completeHtml = createCompleteHtmlDocument(
+              htmlContent,
+              sanitizeFilename(first),
+              isDark
+            );
 
-          download(completeHtml, sanitizeFilename(first) + ".html");
-        });
+            download(completeHtml, sanitizeFilename(first) + '.html');
+          });
 
-        document.getElementById("theme-toggle").addEventListener("click", () => {
-          const html = document.documentElement;
-          const icon = document.querySelector("#theme-toggle span");
-          if (html.classList.contains("dark")) {
-            html.classList.remove("dark");
-            icon.textContent = "🌙";
-            showToast("Light mode aktiviert");
-          } else {
-            html.classList.add("dark");
-            icon.textContent = "☀️";
-            showToast("Dark mode aktiviert");
-          }
-          saveToStorage(mdEditor.value);
-        });
+        document
+          .getElementById('theme-toggle')
+          .addEventListener('click', () => {
+            const html = document.documentElement;
+            const icon = document.querySelector('#theme-toggle span');
+            if (html.classList.contains('dark')) {
+              html.classList.remove('dark');
+              icon.textContent = '🌙';
+              showToast('Light mode aktiviert');
+            } else {
+              html.classList.add('dark');
+              icon.textContent = '☀️';
+              showToast('Dark mode aktiviert');
+            }
+            saveToStorage(mdEditor.value);
+          });
 
         // ── Drag-to-Resize Logic (unchanged) ─────────────────────────────
-        const dragHandle = document.getElementById("drag-handle");
-        const editorWrapper = document.getElementById("editor-wrapper");
-        const mdPane = document.getElementById("md-pane");
-        const rtPane = document.getElementById("rt-pane");
+        const dragHandle = document.getElementById('drag-handle');
+        const editorWrapper = document.getElementById('editor-wrapper');
+        const mdPane = document.getElementById('md-pane');
+        const rtPane = document.getElementById('rt-pane');
         let isDragging = false;
 
         const startDragging = (e) => {
           isDragging = true;
-          document.body.style.userSelect = "none";
-          document.body.style.pointerEvents = "none";
-          editorWrapper.style.cursor = window.innerWidth <= 768 ? "row-resize" : "col-resize";
+          document.body.style.userSelect = 'none';
+          document.body.style.pointerEvents = 'none';
+          editorWrapper.style.cursor =
+            window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
 
-          document.addEventListener("mousemove", drag);
-          document.addEventListener("touchmove", drag, { passive: false });
-          document.addEventListener("mouseup", stopDragging);
-          document.addEventListener("touchend", stopDragging);
+          document.addEventListener('mousemove', drag);
+          document.addEventListener('touchmove', drag, { passive: false });
+          document.addEventListener('mouseup', stopDragging);
+          document.addEventListener('touchend', stopDragging);
         };
 
         const drag = (e) => {
           if (!isDragging) return;
-          if (e.type === "touchmove") e.preventDefault();
+          if (e.type === 'touchmove') e.preventDefault();
           const pointerX = e.clientX ?? e.touches?.[0]?.clientX;
           const pointerY = e.clientY ?? e.touches?.[0]?.clientY;
           if (pointerX === undefined || pointerY === undefined) return;
@@ -459,13 +473,19 @@
           if (isVertical) {
             const dragPos = pointerY - rect.top;
             const totalHeight = rect.height;
-            firstPanePercent = Math.max(10, Math.min(90, (dragPos / totalHeight) * 100));
+            firstPanePercent = Math.max(
+              10,
+              Math.min(90, (dragPos / totalHeight) * 100)
+            );
             mdPane.style.flexBasis = `${firstPanePercent}%`;
             rtPane.style.flexBasis = `${100 - firstPanePercent}%`;
           } else {
             const dragPos = pointerX - rect.left;
             const totalWidth = rect.width;
-            firstPanePercent = Math.max(10, Math.min(90, (dragPos / totalWidth) * 100));
+            firstPanePercent = Math.max(
+              10,
+              Math.min(90, (dragPos / totalWidth) * 100)
+            );
             mdPane.style.flexBasis = `${firstPanePercent}%`;
             rtPane.style.flexBasis = `${100 - firstPanePercent}%`;
           }
@@ -474,19 +494,20 @@
         const stopDragging = () => {
           if (!isDragging) return;
           isDragging = false;
-          document.body.style.userSelect = "";
-          document.body.style.pointerEvents = "";
-          editorWrapper.style.cursor = "";
-          document.removeEventListener("mousemove", drag);
-          document.removeEventListener("touchmove", drag);
-          document.removeEventListener("mouseup", stopDragging);
-          document.removeEventListener("touchend", stopDragging);
+          document.body.style.userSelect = '';
+          document.body.style.pointerEvents = '';
+          editorWrapper.style.cursor = '';
+          document.removeEventListener('mousemove', drag);
+          document.removeEventListener('touchmove', drag);
+          document.removeEventListener('mouseup', stopDragging);
+          document.removeEventListener('touchend', stopDragging);
         };
 
-        dragHandle.addEventListener("mousedown", startDragging);
-        dragHandle.addEventListener("touchstart", startDragging);
-        window.addEventListener("resize", () => {
-          dragHandle.style.cursor = window.innerWidth <= 768 ? "row-resize" : "col-resize";
+        dragHandle.addEventListener('mousedown', startDragging);
+        dragHandle.addEventListener('touchstart', startDragging);
+        window.addEventListener('resize', () => {
+          dragHandle.style.cursor =
+            window.innerWidth <= 768 ? 'row-resize' : 'col-resize';
         });
       } // mainAppInitializer
 
