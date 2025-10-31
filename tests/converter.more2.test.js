@@ -13,4 +13,20 @@ describe('Converter edge-case branches', () => {
     // default marker should be present in alignment row (---)
     expect(md).toContain('| --- |');
   });
+
+  test('table with tbody-first-row becomes header when no thead present', () => {
+    const html = '<table><tbody><tr><td>H1</td><td>H2</td></tr><tr><td>a</td><td>b</td></tr></tbody></table>';
+    const md = htmlToMarkdown(html);
+    expect(md).toContain('| H1 | H2 |');
+    expect(md).toContain('| --- | --- |');
+  // body line should contain the a and b cells (spacing depends on header widths)
+  expect(md).toContain('| a');
+  expect(md).toContain('| b');
+  });
+
+  test('completely empty table returns empty string', () => {
+    const html = '<table></table>';
+    const md = htmlToMarkdown(html);
+    expect(md).toBe('');
+  });
 });
