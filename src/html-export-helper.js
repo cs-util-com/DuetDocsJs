@@ -1,12 +1,6 @@
 // src/html-export-helper.js — HTML Export Utilities (refactored)
 /* global DOMPurify */
-(function (root, factory) {
-  if (typeof module === 'object' && module.exports) {
-    module.exports = factory();
-  } else {
-    root.htmlExportHelper = factory();
-  }
-})(typeof self !== 'undefined' ? self : this, function () {
+function factory() {
   function sanitizeContent(content) {
     if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
       return DOMPurify.sanitize(content, {
@@ -114,4 +108,6 @@ ${sanitizedContent}
   }
 
   return { createCompleteHtmlDocument };
-});
+}
+
+module.exports = factory();
