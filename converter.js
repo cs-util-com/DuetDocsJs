@@ -2,7 +2,6 @@
 // Works in both browser and Node.js environments.
 // Dependencies: showdown, turndown, turndown-plugin-gfm
 
-/* global window */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     // Node / CommonJS
@@ -66,7 +65,7 @@
   // Custom rule for del tags - preserve certain del content as HTML, convert others to ~~
   turndownService.addRule('smartDel', {
     filter: ['del'],
-    replacement: function(content, node) {
+    replacement: function(content) {
       // Heuristic: if content contains HTML-like patterns or certain keywords, preserve as HTML
       // Look for: HTML characters, entity references, or words that suggest HTML context
       const htmlPattern = /[<>&]|html|tag|element|attribute/i;

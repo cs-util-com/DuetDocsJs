@@ -1,7 +1,7 @@
 // html-export-helper.js — HTML Export Utilities
 // Utilities for creating properly formatted, standalone HTML documents from rich text editor content
+/* global DOMPurify */
 
-/* global window, DOMPurify */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
     // Node / CommonJS
